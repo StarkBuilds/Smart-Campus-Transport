@@ -13,7 +13,7 @@ import {
   TrendingUp, AlertTriangle, CheckCircle2, Wifi, WifiOff,
 } from "lucide-react"
 import { toast } from "sonner"
-import LiveMap from "@/components/map/LiveMap"
+import MapWrapper from "@/components/map/MapWrapper"
 import TiltCard from "@/components/common/TiltCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
 import { BUS_STOPS } from "@/lib/constants"
@@ -263,7 +263,7 @@ export default function StudentDashboard() {
 
         {/* Map — takes all remaining space */}
         <main className="flex-1 p-4">
-          <LiveMap busData={busData} userRole="student" />
+          <MapWrapper busData={busData} userRole="student" />
         </main>
       </div>
     </div>

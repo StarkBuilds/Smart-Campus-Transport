@@ -171,15 +171,6 @@ export default function Hero() {
                 ))}
               </div>
             </div>
-
-            {/* Animated border glow */}
-            <div
-              className="absolute inset-0 rounded-2xl pointer-events-none"
-              style={{
-                border: "1px solid transparent",
-                background: "linear-gradient(#0D1421, #0D1421) padding-box, linear-gradient(135deg, rgba(0,200,255,0.4), rgba(124,58,237,0.2), rgba(0,200,255,0.1)) border-box",
-              }}
-            />
           </TiltCard>
         </motion.div>
       </div>

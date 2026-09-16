@@ -13,7 +13,7 @@ import {
   CheckCircle2, Users, Wifi, WifiOff, TrendingDown,
 } from "lucide-react"
 import { toast } from "sonner"
-import LiveMap from "@/components/map/LiveMap"
+import MapWrapper from "@/components/map/MapWrapper"
 import TiltCard from "@/components/common/TiltCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
 import { BUS_STOPS } from "@/lib/constants"
@@ -213,7 +213,7 @@ export default function DriverDashboard() {
 
         {/* Map */}
         <main className="flex-1 p-4">
-          <LiveMap busData={busData} userRole="driver" />
+          <MapWrapper busData={busData} userRole="driver" />
         </main>
       </div>
     </div>
