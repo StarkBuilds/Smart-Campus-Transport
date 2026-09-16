@@ -3,7 +3,7 @@ venv/
 __pycache__/
 .env
 
-# Data files (Never push these to Git)
+# Data files
 *.parquet
 *.ndjson
 *.json
