@@ -42,9 +42,15 @@ public class RouteStop {
     private Integer sequenceOrder;
 
     /**
-     * Scheduled arrival time at this stop for the route.
-     * Decision #6: schedule data lives in PostgreSQL, not hardcoded in ML.
+     * Minutes after the route's departure time when the bus arrives at this stop.
+     * This is offset-based scheduling to support multiple departures per day.
+     *
+     * Example: If departure is 08:00 and arrivalOffsetMinutes=15, the bus
+     * arrives at this stop at 08:15.
+     *
+     * This replaces the old scheduledArrivalTime (LocalTime) which only
+     * supported single-run schedules.
      */
-    @Column(name = "scheduled_arrival_time")
-    private LocalTime scheduledArrivalTime;
+    @Column(name = "arrival_offset_minutes")
+    private Integer arrivalOffsetMinutes;
 }

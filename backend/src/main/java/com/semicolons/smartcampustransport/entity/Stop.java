@@ -18,9 +18,6 @@ public class Stop {
     @Column(name = "stop_id", nullable = false, unique = true)
     private String stopId;
 
-    @Column(name = "stop_name", nullable = false)
-    private String stopName;
-
     @Column(name = "name", nullable = false)
     private String name;
 
