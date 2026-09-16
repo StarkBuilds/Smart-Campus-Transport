@@ -12,40 +12,50 @@ import Map, {
   type MapRef, type LayerProps, type StyleSpecification
 } from "react-map-gl/maplibre"
 import { motion, AnimatePresence } from "framer-motion"
-import { Navigation, Clock, Zap, AlertTriangle } from "lucide-react"
+import { Navigation, Clock, Zap, AlertTriangle, Bus } from "lucide-react"
 import type { LiveBusData } from "@/types/bus"
 import { BUS_STOPS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "@/lib/constants"
 import { routeGeoJSON, toIST } from "@/lib/mock-data"
 import "maplibre-gl/dist/maplibre-gl.css"
 
-// Fully inline dark map style — uses CARTO dark raster tiles directly as PNG
-// No external style.json needed, works on any network
+// Crystal-clear dark map style — uses Esri World Dark Gray Canvas
+// 100% free, no API key needed, zero watermark, extremely high quality
 const DARK_MAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "esri-dark-base": {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
-      attribution: "© CARTO © OpenStreetMap contributors",
+      attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
+    },
+    "esri-dark-labels": {
+      type: "raster",
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
     },
   },
   layers: [
-    // Dark base fill behind tiles
+    // Base dark map layer (roads, land, water)
     {
       id: "background",
       type: "background",
       paint: { "background-color": "#060B18" },
     },
-    // The actual CARTO dark map tiles
     {
-      id: "carto-dark-tiles",
+      id: "esri-base-layer",
       type: "raster",
-      source: "carto-dark",
+      source: "esri-dark-base",
+    },
+    // Reference labels layer (street names, districts like Khidderpore, Majerhat)
+    {
+      id: "esri-labels-layer",
+      type: "raster",
+      source: "esri-dark-labels",
     },
   ],
 }
@@ -207,48 +217,59 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         {/* Live bus marker */}
         {busData && (
           <Marker longitude={busData.longitude} latitude={busData.latitude}>
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex flex-col items-center justify-center cursor-pointer group">
+              {/* Floating identification badge */}
+              <div
+                className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-1 border border-cyan-400/40 shadow-xl flex items-center gap-1.5 z-20"
+                style={{
+                  background: "rgba(6,11,24,0.95)",
+                  boxShadow: "0 4px 20px rgba(0,200,255,0.4)",
+                }}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-bold text-white tracking-wide">Bus B01</span>
+                <span className="text-[10px] font-mono text-cyan-400 font-semibold">{busData.speed_kmh.toFixed(0)} km/h</span>
+              </div>
+
               {/* Sonar pulse ring 1 */}
               <span
-                className="absolute rounded-full animate-ping"
+                className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
-                  width: 48, height: 48,
-                  background: "rgba(0,200,255,0.12)",
-                  animationDuration: "1.5s",
+                  width: 56, height: 56,
+                  background: "rgba(0,200,255,0.25)",
+                  animationDuration: "1.8s",
                 }}
               />
               {/* Sonar pulse ring 2 */}
               <span
-                className="absolute rounded-full animate-ping"
+                className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
-                  width: 32, height: 32,
-                  background: "rgba(0,200,255,0.2)",
-                  animationDuration: "1.5s",
-                  animationDelay: "0.4s",
+                  width: 40, height: 40,
+                  background: "rgba(0,200,255,0.35)",
+                  animationDuration: "1.8s",
+                  animationDelay: "0.5s",
                 }}
               />
 
-              {/* Bus icon — rotates to face direction of travel */}
+              {/* Directional heading ring */}
               <div
-                className="relative w-10 h-10 rounded-full border-2 border-white flex items-center justify-center z-10"
+                className="absolute w-12 h-12 rounded-full pointer-events-none transition-transform duration-1000 ease-out"
                 style={{
-                  background: "#00C8FF",
-                  boxShadow: "0 0 20px rgba(0,200,255,0.7), 0 0 40px rgba(0,200,255,0.3)",
                   transform: `rotate(${busData.bearing}deg)`,
-                  transition: "transform 1.5s ease-out",
                 }}
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#060B18]">
-                  <path d="M12 2L4 10h4v10h8V10h4L12 2z" />
-                </svg>
+                <div className="w-2.5 h-2.5 bg-white rounded-full mx-auto -mt-1 shadow-[0_0_8px_#00C8FF]" />
               </div>
 
-              {/* Speed label */}
+              {/* Bus icon circle */}
               <div
-                className="absolute whitespace-nowrap rounded-full px-1.5 py-0.5 border border-cyan-400/20 text-[9px] font-mono text-cyan-400"
-                style={{ top: "44px", background: "rgba(6,11,24,0.85)" }}
+                className="relative w-11 h-11 rounded-full border-2 border-white flex items-center justify-center z-10 transition-transform group-hover:scale-110"
+                style={{
+                  background: "linear-gradient(135deg, #00C8FF 0%, #0077FF 100%)",
+                  boxShadow: "0 0 25px rgba(0,200,255,0.9), 0 0 50px rgba(0,119,255,0.4)",
+                }}
               >
-                {busData.speed_kmh.toFixed(0)} km/h
+                <Bus className="w-6 h-6 text-white drop-shadow-md" />
               </div>
             </div>
           </Marker>
