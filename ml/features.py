@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import polars as pl
-import numpy as np
+import math
 
 def extract_time_features(df: pl.DataFrame) -> pl.DataFrame:
     """Extracts numerical time features from the UTC timestamp."""
@@ -25,7 +25,7 @@ def create_lag_features(df: pl.DataFrame) -> pl.DataFrame:
 def calculate_physics(df: pl.DataFrame) -> pl.DataFrame:
     """Calculates physical distance and velocity to detect impossible jumps."""
 
-    deg2rad = np.pi / 180.0
+    deg2rad = math.pi / 180.0
     r_earth_meters = 6371000.0
 
     df = df.with_columns([
