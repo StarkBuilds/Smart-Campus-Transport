@@ -7,6 +7,7 @@
 // Pulsing sonar rings show live GPS updates in real time
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import * as maplibregl from "maplibre-gl"
 import Map, {
   Marker, Source, Layer,
   type MapRef, type LayerProps, type StyleSpecification
@@ -18,8 +19,8 @@ import { BUS_STOPS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "@/lib/constants
 import { routeGeoJSON, getRouteProgress, toIST } from "@/lib/mock-data"
 import "maplibre-gl/dist/maplibre-gl.css"
 
-// Crystal-clear dark map style — uses Esri World Dark Gray Canvas
-// 100% free, no API key needed, zero watermark, extremely high quality
+// Crystal-clear dark map style — uses Esri World Dark Gray Canvas with native embedded Route Polyline
+// 100% free, no API key needed, zero watermark, route is guaranteed to render
 const DARK_MAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -30,6 +31,11 @@ const DARK_MAP_STYLE: StyleSpecification = {
       ],
       tileSize: 256,
       attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
+    },
+    // Full route line embedded directly in the style source
+    "campus-route-source": {
+      type: "geojson",
+      data: routeGeoJSON,
     },
     "esri-dark-labels": {
       type: "raster",
@@ -51,7 +57,32 @@ const DARK_MAP_STYLE: StyleSpecification = {
       type: "raster",
       source: "esri-dark-base",
     },
-    // Reference labels layer (street names, districts like Khidderpore, Majerhat)
+    // The wide neon cyan glow for the campus bus route
+    {
+      id: "campus-route-glow",
+      type: "line",
+      source: "campus-route-source",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": "#00C8FF",
+        "line-width": 14,
+        "line-opacity": 0.5,
+        "line-blur": 6,
+      },
+    },
+    // The solid Electric Cyan line for the campus bus route
+    {
+      id: "campus-route-line",
+      type: "line",
+      source: "campus-route-source",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": "#00C8FF",
+        "line-width": 4.5,
+        "line-opacity": 0.95,
+      },
+    },
+    // Reference labels layer on top (street names, districts like Khidderpore, Majerhat)
     {
       id: "esri-labels-layer",
       type: "raster",
@@ -149,6 +180,7 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/5">
       <Map
         ref={mapRef}
+        mapLib={maplibregl}
         initialViewState={{
           longitude: MAP_DEFAULT_CENTER[0],
           latitude: MAP_DEFAULT_CENTER[1],
