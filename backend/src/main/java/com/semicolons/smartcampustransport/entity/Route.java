@@ -20,9 +20,6 @@ public class Route {
     @Column(name = "route_id", nullable = false, unique = true)
     private String routeId;
 
-    @Column(name = "route_name", nullable = false)
-    private String routeName;
-
     @Column(name = "name", nullable = false)
     private String name;
 

@@ -24,8 +24,21 @@ public class Bus {
     @Column(name = "capacity")
     private Integer capacity;
 
+    /**
+     * @deprecated Use Trip-based routing instead. A bus's route is determined
+     * by its current Trip, not a static assignment.
+     * Kept for backward compatibility during transition.
+     */
+    @Deprecated
     @Column(name = "route_id")
     private String routeId;
+
+    /**
+     * The current trip this bus is assigned to.
+     * This is the primary way to determine a bus's route at any given time.
+     */
+    @Column(name = "current_trip_id")
+    private String currentTripId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

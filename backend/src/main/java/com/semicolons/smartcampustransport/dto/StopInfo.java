@@ -1,9 +1,8 @@
 package com.semicolons.smartcampustransport.dto;
 
-import java.time.LocalTime;
-
 /**
  * Stop information included in bus and route responses.
+ * Uses offset-based scheduling: arrivalOffsetMinutes is relative to the route's departure time.
  */
 public record StopInfo(
     String stopId,
@@ -11,7 +10,7 @@ public record StopInfo(
     Double latitude,
     Double longitude,
     Integer sequenceOrder,
-    LocalTime scheduledArrivalTime
+    Integer arrivalOffsetMinutes
 ) {
     // Constructor for stops without sequence order (e.g., next stop in BusResponse)
     public StopInfo(String stopId, String name, Double latitude, Double longitude) {
