@@ -288,6 +288,20 @@
   50%       { transform: translateY(-4px); }
 }
 
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+.marquee:hover {
+  animation-play-state: paused;
+}
+
 /* MapLibre map container — makes it fill its parent properly */
 .maplibregl-map {
   border-radius: inherit;

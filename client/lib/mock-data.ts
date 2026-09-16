@@ -7,7 +7,7 @@ import { BUS_STOPS, ROUTES } from "./constants"
 
 // A sequence of GPS waypoints between stops — the bus follows this path
 // Each point is [longitude, latitude]
-const routeWaypoints: [number, number][] = [
+export const routeWaypoints: [number, number][] = [
   [88.3480, 22.4958],  // Tollygunge Metro
   [88.3450, 22.4980],
   [88.3420, 22.5010],
@@ -102,7 +102,56 @@ export function getDelayColor(delayMinutes: number) {
   return "red"                                          // major delay
 }
 
-// The full route GeoJSON — used by MapLibre to draw the route line on the map
+// Returns two GeoJSON LineStrings:
+// 1) traveledPath: highlighted bright cyan path already completed by the bus
+// 2) remainingPath: translucent dashed line for the remaining path to campus
+export function getRouteProgress(busLng?: number, busLat?: number) {
+  if (!busLng || !busLat) {
+    return {
+      traveledGeoJSON: {
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates: [] },
+        properties: {},
+      },
+      remainingGeoJSON: {
+        type: "Feature" as const,
+        geometry: { type: "LineString" as const, coordinates: routeWaypoints },
+        properties: {},
+      },
+    }
+  }
+
+  // Find the closest waypoint to current bus location
+  let closestIdx = 0
+  let minDist = Infinity
+  for (let i = 0; i < routeWaypoints.length; i++) {
+    const [wLng, wLat] = routeWaypoints[i]
+    const d = Math.hypot(wLng - busLng, wLat - busLat)
+    if (d < minDist) {
+      minDist = d
+      closestIdx = i
+    }
+  }
+
+  // Slice waypoints into traveled vs remaining
+  const traveledCoords = [...routeWaypoints.slice(0, closestIdx + 1), [busLng, busLat] as [number, number]]
+  const remainingCoords = [[busLng, busLat] as [number, number], ...routeWaypoints.slice(closestIdx + 1)]
+
+  return {
+    traveledGeoJSON: {
+      type: "Feature" as const,
+      geometry: { type: "LineString" as const, coordinates: traveledCoords },
+      properties: {},
+    },
+    remainingGeoJSON: {
+      type: "Feature" as const,
+      geometry: { type: "LineString" as const, coordinates: remainingCoords.length > 1 ? remainingCoords : [routeWaypoints[routeWaypoints.length - 1]] },
+      properties: {},
+    },
+  }
+}
+
+// The full route GeoJSON — default fallback
 export const routeGeoJSON = {
   type: "Feature" as const,
   geometry: {

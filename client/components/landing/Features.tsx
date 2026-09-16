@@ -126,6 +126,16 @@ export default function Features() {
             )
           })}
         </div>
+
+        {/* Marquee horizontal tech ticker strip */}
+        <div className="mt-20 overflow-hidden border-y border-white/10 py-4 relative">
+          <div className="absolute inset-y-0 left-0 w-28 bg-gradient-to-r from-[#060B18] to-transparent z-10 pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-[#060B18] to-transparent z-10 pointer-events-none" />
+          <div className="marquee whitespace-nowrap font-mono text-xs uppercase tracking-[0.3em] text-cyan-400/50">
+            <span>LIVE GPS TELEMETRY • ML DELAY PREDICTION • STCET KHIDDERPORE • REAL-TIME BUS RADAR • 3D DIGITAL SMARTPASS • DYNAMIC REROUTING • SPEED PING • </span>
+            <span>LIVE GPS TELEMETRY • ML DELAY PREDICTION • STCET KHIDDERPORE • REAL-TIME BUS RADAR • 3D DIGITAL SMARTPASS • DYNAMIC REROUTING • SPEED PING • </span>
+          </div>
+        </div>
       </div>
     </section>
   )

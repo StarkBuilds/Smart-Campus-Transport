@@ -7,8 +7,9 @@
 import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ArrowRight, MapPin, Clock, AlertTriangle, CheckCircle2, Wifi } from "lucide-react"
-import TiltCard from "@/components/common/TiltCard"
+import { ArrowRight } from "lucide-react"
+import TransitSmartCard from "@/components/landing/TransitSmartCard"
+import ParticleCanvas from "@/components/landing/ParticleCanvas"
 
 // Stagger animation helper — each child fades and slides up in sequence
 const fadeUp = (delay = 0) => ({
@@ -20,6 +21,9 @@ const fadeUp = (delay = 0) => ({
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      {/* Interactive ambient particle canvas field */}
+      <ParticleCanvas />
+
       {/* Animated background orbs — give the page atmosphere */}
       <div className="orb w-[600px] h-[600px] -top-40 -left-40 bg-cyan-500/10 animate-[orb-drift-1_12s_ease-in-out_infinite]" />
       <div className="orb w-[500px] h-[500px] -bottom-40 -right-20 bg-violet-600/10 animate-[orb-drift-2_15s_ease-in-out_infinite]" />
@@ -94,84 +98,14 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Right — floating 3D dashboard card preview */}
+        {/* Right — 3D Transit Smart Card with PrepPass tilt & click-to-flip */}
         <motion.div
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, delay: 0.4, ease: "easeOut" }}
-          className="hidden lg:flex justify-center"
+          className="flex justify-center items-center"
         >
-          <TiltCard
-            intensity={12}
-            className="w-full max-w-md rounded-2xl glass-strong border border-cyan-400/20 p-6 glow-cyan"
-          >
-            {/* Mini dashboard preview card */}
-            <div className="flex flex-col gap-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Bus B01 · Route R01</p>
-                  <p className="font-semibold text-white mt-0.5">Tollygunge → Campus</p>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30">
-                  <AlertTriangle className="w-3 h-3 text-amber-400" />
-                  <span className="text-xs font-medium text-amber-400">3 min late</span>
-                </div>
-              </div>
-
-              {/* Fake mini map */}
-              <div className="relative h-44 rounded-xl overflow-hidden bg-[#0a1628] border border-white/5">
-                {/* Grid lines to simulate map */}
-                <div
-                  className="absolute inset-0 opacity-20"
-                  style={{
-                    backgroundImage: "linear-gradient(rgba(0,200,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.3) 1px, transparent 1px)",
-                    backgroundSize: "30px 30px",
-                  }}
-                />
-                {/* Simulated route line */}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 176">
-                  <path
-                    d="M 40 140 Q 100 120 160 100 Q 220 80 280 60 Q 330 45 370 30"
-                    fill="none"
-                    stroke="rgba(0,200,255,0.6)"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 3"
-                  />
-                  {/* Stop dots */}
-                  {[
-                    { cx: 40, cy: 140 }, { cx: 120, cy: 110 }, { cx: 200, cy: 82 },
-                    { cx: 280, cy: 58 }, { cx: 370, cy: 30 },
-                  ].map((dot, i) => (
-                    <circle key={i} cx={dot.cx} cy={dot.cy} r="5" fill="rgba(0,200,255,0.4)" stroke="rgba(0,200,255,0.8)" strokeWidth="1.5" />
-                  ))}
-                  {/* Bus position */}
-                  <circle cx="200" cy="82" r="8" fill="#00C8FF" className="animate-[bus-bounce_2s_ease-in-out_infinite]" />
-                  <circle cx="200" cy="82" r="16" fill="rgba(0,200,255,0.15)" />
-                </svg>
-                {/* Live badge */}
-                <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/30">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full pulse-live" />
-                  <span className="text-[10px] text-emerald-400 font-medium">LIVE</span>
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { icon: Clock, label: "ETA", value: "12 min", color: "text-cyan-400" },
-                  { icon: MapPin, label: "Next Stop", value: "Majerhat", color: "text-violet-400" },
-                  { icon: Wifi, label: "Signal", value: "Strong", color: "text-emerald-400" },
-                ].map((item) => (
-                  <div key={item.label} className="flex flex-col gap-1 p-3 rounded-xl bg-white/5 border border-white/5">
-                    <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
-                    <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                    <p className={`text-xs font-semibold ${item.color}`}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TiltCard>
+          <TransitSmartCard />
         </motion.div>
       </div>
 

@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navigation, Clock, Zap, AlertTriangle, Bus } from "lucide-react"
 import type { LiveBusData } from "@/types/bus"
 import { BUS_STOPS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "@/lib/constants"
-import { routeGeoJSON, toIST } from "@/lib/mock-data"
+import { routeGeoJSON, getRouteProgress, toIST } from "@/lib/mock-data"
 import "maplibre-gl/dist/maplibre-gl.css"
 
 // Crystal-clear dark map style — uses Esri World Dark Gray Canvas
@@ -60,27 +60,46 @@ const DARK_MAP_STYLE: StyleSpecification = {
   ],
 }
 
-// MapLibre layer for the route line glow (wide, blurry)
-const routeGlowLayer: LayerProps = {
-  id: "route-glow",
+// 1. Traveled path glow — bright Electric Cyan neon bloom
+const traveledGlowLayer: LayerProps = {
+  id: "traveled-glow",
   type: "line",
   paint: {
     "line-color": "#00C8FF",
-    "line-width": 14,
-    "line-opacity": 0.08,
+    "line-width": 16,
+    "line-opacity": 0.35,
     "line-blur": 8,
   },
 }
 
-// MapLibre layer for the actual visible route line (dashed)
-const routeLineLayer: LayerProps = {
-  id: "route-line",
+// 2. Traveled path line — solid, intense Electric Cyan
+const traveledLineLayer: LayerProps = {
+  id: "traveled-line",
   type: "line",
+  layout: {
+    "line-cap": "round",
+    "line-join": "round",
+  },
   paint: {
     "line-color": "#00C8FF",
-    "line-width": 3,
-    "line-opacity": 0.75,
-    "line-dasharray": [5, 3],
+    "line-width": 4.5,
+    "line-opacity": 0.95,
+  },
+}
+
+// 3. Remaining path ahead — dashed, subtle preview leading to campus
+const remainingLineLayer: LayerProps = {
+  id: "remaining-line",
+  type: "line",
+  layout: {
+    "line-cap": "round",
+    "line-join": "round",
+  },
+  paint: {
+    "line-color": "#818CF8",
+    "line-width": 2.5,
+    "line-opacity": 0.45,
+    "line-dasharray": [4, 3],
   },
 }
 
@@ -123,6 +142,9 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
     onStopClick?.(stopId)
   }
 
+  // Dynamic route highlighting: compute traveled vs remaining path
+  const { traveledGeoJSON, remainingGeoJSON } = getRouteProgress(busData?.longitude, busData?.latitude)
+
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/5">
       <Map
@@ -142,10 +164,15 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         }}
         attributionControl={false}
       >
-        {/* Bus route GeoJSON source + layers */}
-        <Source id="route" type="geojson" data={routeGeoJSON}>
-          <Layer {...routeGlowLayer} />
-          <Layer {...routeLineLayer} />
+        {/* Traveled Path: highlighted Electric Cyan with neon bloom */}
+        <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
+          <Layer {...traveledGlowLayer} />
+          <Layer {...traveledLineLayer} />
+        </Source>
+
+        {/* Remaining Path: dashed futuristic path leading to STCET campus */}
+        <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
+          <Layer {...remainingLineLayer} />
         </Source>
 
         {/* Bus stop markers */}
