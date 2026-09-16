@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Navigation, Clock, Zap, AlertTriangle, Bus } from "lucide-react"
 import type { LiveBusData } from "@/types/bus"
 import { BUS_STOPS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "@/lib/constants"
-import { routeGeoJSON, getRouteProgress, toIST } from "@/lib/mock-data"
+import { routeGeoJSON, routeWaypoints, getRouteProgress, toIST } from "@/lib/mock-data"
 import "maplibre-gl/dist/maplibre-gl.css"
 
 // Crystal-clear dark map style — uses Esri World Dark Gray Canvas with native embedded Route Polyline
@@ -176,6 +176,42 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
   // Dynamic route highlighting: compute traveled vs remaining path
   const { traveledGeoJSON, remainingGeoJSON } = getRouteProgress(busData?.longitude, busData?.latitude)
 
+  // Screen-projected SVG route line — converts GPS coordinates directly to container pixels
+  // This guarantees the route is 100% visible regardless of WebGL/shader/tile loading quirks
+  const [svgPath, setSvgPath] = useState("")
+
+  const updateSvgPath = useCallback(() => {
+    const map = mapRef.current?.getMap()
+    if (!map) return
+    try {
+      const pts = routeWaypoints.map(([lng, lat]) => {
+        const p = map.project([lng, lat])
+        return `${p.x.toFixed(1)},${p.y.toFixed(1)}`
+      })
+      if (pts.length > 1) {
+        setSvgPath(`M ${pts.join(" L ")}`)
+      }
+    } catch {
+      // Map projection not ready yet
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap()
+    if (!map) return
+
+    updateSvgPath()
+    map.on("render", updateSvgPath)
+    map.on("move", updateSvgPath)
+    map.on("zoom", updateSvgPath)
+
+    return () => {
+      map.off("render", updateSvgPath)
+      map.off("move", updateSvgPath)
+      map.off("zoom", updateSvgPath)
+    }
+  }, [mapLoaded, updateSvgPath])
+
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/5">
       <Map
@@ -188,7 +224,10 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         }}
         style={{ width: "100%", height: "100%" }}
         mapStyle={DARK_MAP_STYLE}
-        onLoad={() => setMapLoaded(true)}
+        onLoad={() => {
+          setMapLoaded(true)
+          updateSvgPath()
+        }}
         onError={(e) => {
           // Even on error, show the map container so markers render
           console.warn("Map tile error:", e)
@@ -196,6 +235,36 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         }}
         attributionControl={false}
       >
+        {/* Guaranteed High-Definition Screen-Projected Neon Route Line */}
+        {svgPath && (
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-visible">
+            <svg className="w-full h-full" style={{ overflow: "visible" }}>
+              {/* Outer Cyan Neon Bloom */}
+              <path
+                d={svgPath}
+                fill="none"
+                stroke="#00C8FF"
+                strokeWidth="16"
+                strokeOpacity="0.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ filter: "blur(6px)" }}
+              />
+              {/* Core Solid Electric Cyan Laser Line */}
+              <path
+                d={svgPath}
+                fill="none"
+                stroke="#00C8FF"
+                strokeWidth="4.5"
+                strokeOpacity="0.95"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="10 5"
+              />
+            </svg>
+          </div>
+        )}
+
         {/* Traveled Path: highlighted Electric Cyan with neon bloom */}
         <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
           <Layer {...traveledGlowLayer} />
