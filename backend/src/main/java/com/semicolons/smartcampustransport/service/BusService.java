@@ -73,6 +73,7 @@ public class BusService {
             .busId(bus.getBusId())
             .status(bus.getStatus().name())
             .routeId(bus.getRouteId())
+            .currentTripId(bus.getCurrentTripId())
             .latestLatitude(bus.getLatestLatitude())
             .latestLongitude(bus.getLatestLongitude())
             .latestTimestamp(bus.getLatestTimestamp())
@@ -83,19 +84,26 @@ public class BusService {
         if (bus.getNextStopId() != null && !bus.getNextStopId().isBlank()) {
             stopRepository.findById(bus.getNextStopId())
                 .ifPresent(stop -> {
+                    Integer offset = null;
+                    Integer seq = null;
+
+                    if (bus.getRouteId() != null) {
+                        Optional<RouteStop> rs = routeStopRepository.findByRouteIdAndStopId(
+                            bus.getRouteId(), stop.getStopId());
+                        if (rs.isPresent()) {
+                            offset = rs.get().getArrivalOffsetMinutes();
+                            seq = rs.get().getSequenceOrder();
+                        }
+                    }
+
                     builder.nextStop(new StopInfo(
                         stop.getStopId(),
                         stop.getName(),
                         stop.getLatitude(),
-                        stop.getLongitude()
+                        stop.getLongitude(),
+                        seq,
+                        offset
                     ));
-
-                    // Also include scheduled arrival time if available
-                    if (bus.getRouteId() != null) {
-                        routeStopRepository.findByRouteIdAndStopId(bus.getRouteId(), stop.getStopId())
-                            .map(RouteStop::getScheduledArrivalTime)
-                            .ifPresent(builder::scheduledArrivalTime);
-                    }
                 });
         }
 
