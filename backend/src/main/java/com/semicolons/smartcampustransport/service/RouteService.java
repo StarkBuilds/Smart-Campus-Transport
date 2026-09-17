@@ -56,7 +56,7 @@ public class RouteService {
                 rs.getStop().getLatitude(),
                 rs.getStop().getLongitude(),
                 rs.getSequenceOrder(),
-                rs.getScheduledArrivalTime()
+                rs.getArrivalOffsetMinutes()
             ))
             .toList();
 
