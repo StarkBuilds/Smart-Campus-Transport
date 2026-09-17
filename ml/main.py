@@ -7,7 +7,6 @@ import osmnx as ox
 from pydantic import BaseModel
 from typing import List
 import polars as pl
-
 from features import calculate_ml_confidence, run_feature_extraction
 from routing_engine import find_best_routes
 from schemas import BusEvent
@@ -15,23 +14,38 @@ from schemas import BusEvent
 # Initialize the web server daemon
 app = FastAPI(title="Smart Campus Transit API")
 
-# Load map globally on boot
+# --- Global Map Boot Sequence ---
 print("Loading Kolkata map into memory...please wait.")
 raw_graph = ox.load_graphml("kolkata_drive.graphml")
 KOLKATA_GRAPH = ox.convert.to_digraph(raw_graph)
-print(f"Map Loaded! {len(KOLKATA_GRAPH.nodes)} intersections ready.")
+# Safely prune narrow alleys from the graph without destroying intersections
+print("Pruning narrow para lanes and pedestrian paths for heavy bus routing...")
+EXCLUDED_HIGHWAYS = {'living_street', 'pedestrian', 'footway', 'service', 'steps', 'path'}
 
+edges_to_remove = []
+for u, v, data in KOLKATA_GRAPH.edges(data=True):
+    hw = data.get('highway', '')
+    hw_list = hw if isinstance(hw, list) else [hw]
+    if any(h in EXCLUDED_HIGHWAYS for h in hw_list):
+        edges_to_remove.append((u, v))
+
+KOLKATA_GRAPH.remove_edges_from(edges_to_remove)
+print(f"Map Loaded & Filtered! {len(KOLKATA_GRAPH.nodes)} intersections ready.")
 # --- Route Planning Endpoint ---
 class RouteRequest(BaseModel):
-    source_node: str
-    target_node: str
+    source_lat: float
+    source_lon: float
+    target_lat: float
+    target_lon: float
 
 @app.post("/alternate_routes")
 async def get_routes(request: RouteRequest):
     result = find_best_routes(
         KOLKATA_GRAPH,
-        request.source_node,
-        request.target_node
+        request.source_lat,
+        request.source_lon,
+        request.target_lat,
+        request.target_lon
     )
     return result
 
