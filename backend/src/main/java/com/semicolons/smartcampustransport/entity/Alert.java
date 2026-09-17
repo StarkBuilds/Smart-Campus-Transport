@@ -8,7 +8,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "alerts", indexes = {
         @Index(name = "idx_alert_bus_id", columnList = "bus_id"),
-        @Index(name = "idx_alert_active", columnList = "active"),
+        @Index(name = "idx_alert_status", columnList = "status"),
         @Index(name = "idx_alert_created_at", columnList = "created_at")
 })
 @Getter
@@ -31,6 +31,12 @@ public class Alert {
 
     @Column(name = "route_id")
     private String routeId;
+
+    /**
+     * The trip this alert is associated with (optional).
+     */
+    @Column(name = "trip_id")
+    private String tripId;
 
     @Column(name = "message", nullable = false, length = 500)
     private String message;
