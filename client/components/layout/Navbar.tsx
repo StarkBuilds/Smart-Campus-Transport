@@ -11,12 +11,12 @@ import { Menu, X, Bus, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "About", href: "#about" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Careers", href: "#careers" },
-  { label: "Contact", href: "#contact" },
+  { label: "Fleet Intelligence", href: "#features" },
+  { label: "Route Pipeline", href: "#how-it-works" },
+  { label: "Campus Context", href: "#about" },
+  { label: "Live Radar", href: "/dashboard" },
+  { label: "Driver Console", href: "/driver" },
+  { label: "Dispatch Desk", href: "#contact" },
 ]
 
 export default function Navbar() {
@@ -59,30 +59,41 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
-              >
-                {link.label}
-              </a>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.href.startsWith("/") ? (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="px-3.5 py-2 text-sm text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="px-3.5 py-2 text-sm text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
+                >
+                  {link.label}
+                </a>
+              )
+            )}
           </div>
 
           {/* CTA buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/login"
-              className="px-4 py-2 text-sm font-medium text-cyan-400 border border-cyan-400/30 rounded-xl hover:border-cyan-400 hover:bg-cyan-400/10 transition-all duration-200"
+              className="px-4 py-2 text-sm font-medium text-white/80 border border-white/10 rounded-xl hover:border-cyan-400/40 hover:text-white hover:bg-white/5 transition-all duration-200"
             >
-              Sign In
+              Portal Login
             </Link>
             <Link
-              href="/register"
-              className="px-5 py-2 text-sm font-semibold text-[#060B18] bg-cyan-400 rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan"
+              href="/dashboard"
+              className="px-5 py-2 text-sm font-semibold text-[#060B18] bg-cyan-400 rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan flex items-center gap-1.5"
             >
-              Get Started
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse" />
+              Live Radar
             </Link>
           </div>
 
@@ -108,22 +119,41 @@ export default function Navbar() {
             className="fixed inset-x-0 top-16 z-40 glass-strong border-b border-white/5 md:hidden"
           >
             <div className="px-5 py-6 flex flex-col gap-2">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-4 py-3 text-sm text-muted-foreground hover:text-white rounded-xl hover:bg-white/5 transition-all"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {NAV_LINKS.map((link) =>
+                link.href.startsWith("/") ? (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="px-4 py-3 text-sm text-muted-foreground hover:text-white rounded-xl hover:bg-white/5 transition-all"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="px-4 py-3 text-sm text-muted-foreground hover:text-white rounded-xl hover:bg-white/5 transition-all"
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
               <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
-                <Link href="/login" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-center text-sm font-medium text-cyan-400 border border-cyan-400/30 rounded-xl">
-                  Sign In
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 text-center text-sm font-medium text-white/80 border border-white/10 rounded-xl"
+                >
+                  Portal Login
                 </Link>
-                <Link href="/register" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-center text-sm font-semibold bg-cyan-400 text-[#060B18] rounded-xl">
-                  Get Started
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 text-center text-sm font-semibold bg-cyan-400 text-[#060B18] rounded-xl"
+                >
+                  Live Radar
                 </Link>
               </div>
             </div>

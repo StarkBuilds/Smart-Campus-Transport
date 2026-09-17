@@ -5,22 +5,23 @@ import { Bus } from "lucide-react"
 import { CAMPUS } from "@/lib/constants"
 
 const FOOTER_LINKS = {
-  Product: [
-    { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Dashboard Demo", href: "/login" },
+  Platform: [
+    { label: "Fleet Intelligence", href: "#features" },
+    { label: "Route Pipeline", href: "#how-it-works" },
+    { label: "Live Radar Map", href: "/dashboard" },
+    { label: "Driver Console", href: "/driver" },
   ],
-  Company: [
-    { label: "About", href: "#about" },
-    { label: "Careers", href: "#careers" },
-    { label: "Contact", href: "#contact" },
-    { label: "Blog", href: "#" },
+  Campus: [
+    { label: "STCET Context", href: "#about" },
+    { label: "Khidderpore Route R01", href: "/dashboard" },
+    { label: "Designated Stops", href: "#features" },
+    { label: "Dispatch Desk", href: "#contact" },
   ],
-  Legal: [
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
-    { label: "Cookie Policy", href: "#" },
+  Architecture: [
+    { label: "MapLibre GIS Engine", href: "#features" },
+    { label: "WebSocket Pipeline", href: "#how-it-works" },
+    { label: "ML Delay Estimator", href: "#about" },
+    { label: "Digital Pass Verification", href: "/" },
   ],
 }
 

@@ -44,55 +44,55 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-5 grid lg:grid-cols-2 gap-16 items-center">
         {/* Left — headline and CTAs */}
         <div className="flex flex-col gap-8">
-          {/* Live badge */}
+          {/* Institutional telemetry badge */}
           <motion.div {...fadeUp(0.1)} className="flex">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full glass border border-cyan-400/20 text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-live" />
-              <span className="text-emerald-400">LIVE TRACKING ACTIVE</span>
-              <span className="text-muted-foreground">· STCET Campus</span>
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full glass border border-cyan-400/25 text-xs font-medium shadow-[0_0_20px_rgba(0,200,255,0.1)]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-live shadow-[0_0_8px_#10B981]" />
+              <span className="text-cyan-400 font-mono tracking-wider text-[11px] font-semibold">FLEET TELEMETRY ACTIVE</span>
+              <span className="text-white/40">·</span>
+              <span className="text-white/80 font-mono text-[11px]">STCET Khidderpore</span>
             </div>
           </motion.div>
 
           {/* Main headline */}
-          <motion.h1 {...fadeUp(0.2)} className="text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
-            Know When Your{" "}
-            <span className="text-gradient-cyan">Bus Arrives.</span>
-            {" "}Before It Does.
+          <motion.h1 {...fadeUp(0.2)} className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.12] tracking-tight text-white">
+            Real-Time Campus Transit Intelligence &{" "}
+            <span className="text-gradient-cyan">ML Delay Forecasting.</span>
           </motion.h1>
 
           {/* Subheading */}
-          <motion.p {...fadeUp(0.35)} className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-            Real-time GPS tracking for STCET campus buses. ML-powered delay predictions.
-            Students know their ETA. Drivers know their route. Everyone stays on time.
+          <motion.p {...fadeUp(0.35)} className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl font-normal">
+            Engineered specifically for St. Thomas&apos; College of Engineering &amp; Technology. High-frequency GPS telemetry, designated student boarding stops, and sub-30-second arrival predictions across Kolkata.
           </motion.p>
 
           {/* CTA buttons */}
           <motion.div {...fadeUp(0.5)} className="flex flex-wrap items-center gap-4">
             <Link
-              href="/register"
-              className="group flex items-center gap-2 px-7 py-3.5 bg-cyan-400 text-[#060B18] font-semibold rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan text-sm"
+              href="/dashboard"
+              className="group flex items-center gap-2 px-7 py-3.5 bg-cyan-400 text-[#060B18] font-bold rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan text-sm shadow-[0_0_25px_rgba(0,200,255,0.4)]"
             >
-              Track Your Bus Now
+              Open Live Tracking Map
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              href="/login"
-              className="flex items-center gap-2 px-7 py-3.5 text-sm font-medium text-white border border-white/10 rounded-xl hover:border-cyan-400/40 hover:bg-white/5 transition-all duration-200"
+              href="/driver"
+              className="flex items-center gap-2 px-7 py-3.5 text-sm font-semibold text-white/90 border border-white/15 rounded-xl hover:border-cyan-400/50 hover:bg-white/5 transition-all duration-200"
             >
-              Driver Portal
+              Driver Navigation Console
             </Link>
           </motion.div>
 
           {/* Trust stats */}
-          <motion.div {...fadeUp(0.65)} className="flex items-center gap-8 pt-2">
+          <motion.div {...fadeUp(0.65)} className="grid grid-cols-3 sm:grid-cols-4 gap-6 pt-3 border-t border-white/10">
             {[
-              { value: "6", label: "Bus Stops" },
-              { value: "< 30s", label: "Update Rate" },
-              { value: "87%", label: "ML Accuracy" },
+              { value: "6", label: "Designated Stops" },
+              { value: "< 3s", label: "Telemetry Ping" },
+              { value: "87%", label: "ML Confidence" },
+              { value: "R01", label: "Khidderpore Route" },
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
-                <span className="text-2xl font-bold text-cyan-400">{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <span className="text-xl sm:text-2xl font-bold font-mono text-cyan-400">{stat.value}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</span>
               </div>
             ))}
           </motion.div>

@@ -8,8 +8,6 @@ import Hero from "@/components/landing/Hero"
 import Features from "@/components/landing/Features"
 import HowItWorks from "@/components/landing/HowItWorks"
 import About from "@/components/landing/About"
-import Pricing from "@/components/landing/Pricing"
-import Careers from "@/components/landing/Careers"
 import Contact from "@/components/landing/Contact"
 
 export default function LandingPage() {
@@ -21,8 +19,6 @@ export default function LandingPage() {
         <Features />
         <HowItWorks />
         <About />
-        <Pricing />
-        <Careers />
         <Contact />
       </main>
       <Footer />
