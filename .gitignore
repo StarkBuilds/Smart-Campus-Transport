@@ -1,0 +1,13 @@
+# Environments
+venv/
+__pycache__/
+.env
+
+# Data files
+*.parquet
+*.ndjson
+*.json
+*.csv
+
+# OS generated files
+.DS_Store
