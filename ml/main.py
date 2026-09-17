@@ -55,7 +55,7 @@ async def process_telemetry(payload: List[BusEvent]):
 
         for bus in cleaned_bus_data:
             # Generate the prediction
-            confidence_score = calculate_ml_confidence(bus["route_id"], current_time)
+            confidence_score = calculate_ml_confidence(bus, current_time)
 
             # Inject the exact nested schema the frontend React map requires
             bus["features"] = {

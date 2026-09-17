@@ -1,30 +1,29 @@
 #!/usr/bin/env python3
 
+import ctypes
+import os
 import polars as pl
 import math
 import datetime
 
-def calculate_ml_confidence(route_id: str, current_time: datetime.datetime) -> float:
+lib_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libinference.so")
+c_inference = ctypes.CDLL(lib_path)
+c_inference.calculate_confidence.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int]
+c_inference.calculate_confidence.restype = ctypes.c_double
+
+def calculate_ml_confidence(bus_data: dict, current_time: datetime.datetime) -> float:
     """
-    Returns a float between 0.0 and 1.0 representing our ML model's
-    confidence in the ETA/Route for that specific time of day.
-
-    TODO: Replace this heuristic with actual LightGBM inference.
+    Passes Data across C-boundary
     """
-    hour = current_time.hour
+    speed = float(bus_data.get("speed_kmh", 0.0))
+    hour = float(current_time.hour)
 
-    # Hackathon heuristic: Traffic prediction is highly confident at 2 AM,
-    # but confidence drops significantly during Kolkata rush hour (9 AM or 6 PM).
-    if (8 <= hour <= 10) or (17 <= hour <= 20):
-        # Rush hour: chaotic traffic, lower confidence
-        base_confidence = 0.45
-    else:
-        # Clear roads: high confidence
-        base_confidence = 0.92
+    InputArrayType = ctypes.c_double * 2
+    feature_array = InputArrayType(speed, hour)
 
-    # We return a raw float.
-    # The frontend is already multiplying it by 100 with Math.round()
-    return base_confidence
+    confidence = c_inference.calculate_confidence(feature_array, 2)
+
+    return float(confidence)
 
 def extract_time_features(df: pl.DataFrame) -> pl.DataFrame:
     """Extracts numerical time features from the UTC timestamp."""
