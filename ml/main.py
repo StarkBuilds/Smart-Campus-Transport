@@ -7,7 +7,7 @@ import osmnx as ox
 from pydantic import BaseModel
 from typing import List
 import polars as pl
-from features import calculate_ml_confidence, run_feature_extraction
+from features import append_ml_confidence_vectorized, run_feature_extraction
 from routing_engine import find_best_routes
 from schemas import BusEvent
 
@@ -45,40 +45,38 @@ async def get_routes(request: RouteRequest):
         request.source_lat,
         request.source_lon,
         request.target_lat,
-        request.target_lon
+        request.target_lon,
+        LIVE_EDGE_SPEEDS
     )
     return result
 
 # --- Telemetry Processing Endpoint ---
+LIVE_EDGE_SPEEDS = {}
+
 @app.post("/clean_telemetry")
 async def process_telemetry(payload: List[BusEvent]):
     try:
-        # 1. Validate and convert incoming JSON into a format Polars can read
         valid_events = [event.model_dump() for event in payload]
-
-        # 2. Run existing Physics Engine (Polars)
         df = pl.DataFrame(valid_events)
+
+        # Extract features and run the bulk ONNX C++ inference
         processed_df = run_feature_extraction(df)
+        final_df = append_ml_confidence_vectorized(processed_df)
 
-        # Convert Polars DataFrame back to standard Python dictionaries
-        cleaned_bus_data = processed_df.to_dicts()
+        # THE FIX: Vectorized Spatial Snapping
+        # Extract Polars columns directly into Python lists
+        lons = final_df["longitude"].to_list()
+        lats = final_df["latitude"].to_list()
+        speeds = final_df["speed_kmh"].to_list()
 
-        # 3. Add the ML Confidence upgrade
-        final_response = []
-        current_time = datetime.datetime.now()
+        # Fire all 25,000 coordinates into the scikit-learn KD-Tree in a single shot
+        nearest_nodes = ox.distance.nearest_nodes(KOLKATA_GRAPH, X=lons, Y=lats)
 
-        for bus in cleaned_bus_data:
-            # Generate the prediction
-            confidence_score = calculate_ml_confidence(bus, current_time)
+        # Quickly zip the results into the global dictionary in native Python
+        for node, speed in zip(nearest_nodes, speeds):
+            LIVE_EDGE_SPEEDS[node] = speed
 
-            # Inject the exact nested schema the frontend React map requires
-            bus["features"] = {
-                "ml_confidence": confidence_score
-            }
-            final_response.append(bus)
-
-        # 4. Shoot it back over the network
-        return final_response
+        return final_df.to_dicts()
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
