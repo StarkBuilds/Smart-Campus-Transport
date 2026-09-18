@@ -2,6 +2,7 @@
 venv/
 __pycache__/
 .env
+*.pyc
 
 # Data files
 *.parquet
@@ -11,3 +12,6 @@ __pycache__/
 
 # OS generated files
 .DS_Store
+
+#map
+kolkata_drive.graphml
