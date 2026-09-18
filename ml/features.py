@@ -1,47 +1,8 @@
 #!/usr/bin/env python3
 
-import os
 import polars as pl
 import math
-import datetime
-import onnxruntime as rt
-import numpy as np
 
-# Global session cache (initialized lazily)
-_SESS = None
-_INPUT_NAME = None
-
-def get_inference_session():
-    """Lazily loads the ONNX runtime session on first inference request."""
-    global _SESS, _INPUT_NAME
-    if _SESS is None:
-        model_path = "traffic_model.onnx"
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(
-                f"'{model_path}' not found! Run 'python train_model.py' to generate the binary."
-            )
-        _SESS = rt.InferenceSession(model_path, providers=['CPUExecutionProvider'])
-        _INPUT_NAME = _SESS.get_inputs()[0].name
-    return _SESS, _INPUT_NAME
-
-def append_ml_confidence_vectorized(df: pl.DataFrame) -> pl.DataFrame:
-    """
-    Fires the feature batch across the ONNX C++ boundary in a single SIMD pass.
-    """
-    sess, input_name = get_inference_session()
-
-    # Must match the EXACT order and features used in train_model.py
-    feature_cols = ["hour_of_day", "day_of_week", "is_morning_rush", "calculated_velocity_mps"]
-    X_batch = df.select(feature_cols).to_numpy().astype(np.float32)
-
-    raw_probs = sess.run(None, {input_name: X_batch})[1]
-
-    if isinstance(raw_probs, list):
-        congestion_scores = [float(p.get(1, 0.0)) for p in raw_probs]
-    else:
-        congestion_scores = [float(p[1]) for p in raw_probs]
-
-    return df.with_columns(pl.Series("ml_confidence", congestion_scores))
 
 def extract_time_features(df: pl.DataFrame) -> pl.DataFrame:
     """Extracts numerical time features from the timestamp."""
@@ -97,7 +58,6 @@ def run_feature_extraction(df: pl.DataFrame) -> pl.DataFrame:
     df = df.drop_nulls(subset=["prev_lat"])
     df = df.filter(pl.col("calculated_velocity_mps") < 35.0)
 
-    # Calculates speed_ratio required by the ONNX feature contract
     df = df.with_columns(
         (pl.col("speed_kmh") / 40.0).alias("speed_ratio")
     )

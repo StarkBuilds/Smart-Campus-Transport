@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-import math
-import polars as pl
+import pandas as pd
 import networkx as nx
 import osmnx as ox
+import math
+import numpy as np
 
-def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+def calculate_haversine_km(lat1, lon1, lat2, lon2):
     """Fallback straight-line geographic distance calculation."""
-    if any(v is None or math.isnan(v) for v in [lat1, lon1, lat2, lon2]):
-        return None
+    if any(pd.isna(x) for x in [lat1, lon1, lat2, lon2]):
+        return np.nan
 
     r_earth_km = 6371.0
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
@@ -18,65 +19,69 @@ def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
     c = 2 * math.asin(math.sqrt(a))
     return r_earth_km * c
 
-def calculate_geospatial_features(df: pl.DataFrame, road_graph: nx.DiGraph, route_metadata: dict = None) -> pl.DataFrame:
+def enrich_geospatial_features(df: pd.DataFrame, road_graph: nx.DiGraph) -> pd.DataFrame:
     """
-    Produces dynamic spatial features from live bus telemetry.
-    Expects df to contain: 'latitude', 'longitude', 'next_stop_latitude', 'next_stop_longitude', 'route_id'
+    Consumes the canonical CampusRide DataFrame and dynamically calculates
+    live geographic routing features for downstream XGBoost consumption.
     """
-    if route_metadata is None:
-        route_metadata = {}
+    # Create a copy to prevent SettingWithCopy warnings from Pandas
+    enriched_df = df.copy()
 
-    # Overwrites static ETL calculations with highly accurate dynamic live-to-stop distances
-    df = df.with_columns([
-        pl.struct(["latitude", "longitude", "next_stop_latitude", "next_stop_longitude"]).map_elements(
-            lambda x: haversine_distance_km(x["latitude"], x["longitude"], x["next_stop_latitude"], x["next_stop_longitude"]),
-            return_type=pl.Float64
-        ).alias("distance_to_next_stop_km")
-    ])
+    # --- 1. Dynamic Geographic Distance ---
+    # Replaces the static ETL distance with the actual distance from current GPS
+    enriched_df["distance_to_next_stop_km"] = enriched_df.apply(
+        lambda row: calculate_haversine_km(
+            row.get("latitude"), row.get("longitude"),
+            row.get("next_stop_latitude"), row.get("next_stop_longitude")
+        ), axis=1
+    )
 
-    road_distances = []
+    # --- 2. Live Road Network Traversal ---
+    dynamic_road_distances = []
 
-    for row in df.iter_rows(named=True):
+    for _, row in enriched_df.iterrows():
         lat, lon = row.get("latitude"), row.get("longitude")
         stop_lat, stop_lon = row.get("next_stop_latitude"), row.get("next_stop_longitude")
 
-        if any(v is None or math.isnan(v) for v in [lat, lon, stop_lat, stop_lon]):
-            road_distances.append(None)
+        # Handle missing canonical geography gracefully
+        if any(pd.isna(v) for v in [lat, lon, stop_lat, stop_lon]):
+            dynamic_road_distances.append(np.nan)
             continue
 
         try:
-            # Dynamically snap the live bus coordinate and the stop to the nearest physical asphalt
+            # Snap live GPS to nearest physical road nodes
             u = ox.distance.nearest_nodes(road_graph, X=lon, Y=lat)
             v = ox.distance.nearest_nodes(road_graph, X=stop_lon, Y=stop_lat)
 
-            # Execute Dijkstra's shortest path
+            # Calculate physical road path distance
             length_meters = nx.shortest_path_length(road_graph, u, v, weight="length")
-            road_distances.append(length_meters / 1000.0)
+            dynamic_road_distances.append(length_meters / 1000.0)
 
-        except (nx.NetworkXNoPath, Exception):
-            # Graceful Fallback: If graph is disconnected/fails, use Haversine * 1.35 standard detour penalty
-            fallback = haversine_distance_km(lat, lon, stop_lat, stop_lon)
-            road_distances.append(fallback * 1.35 if fallback else None)
+        except (nx.NetworkXNoPath, nx.NodeNotFound, Exception):
+            # Graceful Fallback: Graph disconnected or coordinate out of bounds.
+            # Apply standard urban detour penalty (1.35x) to the Haversine distance.
+            fallback = calculate_haversine_km(lat, lon, stop_lat, stop_lon)
+            dynamic_road_distances.append(fallback * 1.35 if pd.notna(fallback) else np.nan)
 
-    df = df.with_columns(pl.Series("road_distance_km", road_distances))
+    # Overwrite the static ETL approximation with the true physical traversal distance
+    enriched_df["road_distance_km"] = dynamic_road_distances
 
-    df = df.with_columns([
-        pl.col("route_id").map_elements(
-            lambda route: route_metadata.get(route, None),
-            return_type=pl.Float64
-        ).alias("route_length_km")
-    ])
+    # --- 3. Route Configuration Validation ---
+    # Ensure route_length_km exists from the static config, fallback to NaN if missing
+    if "route_length_km" not in enriched_df.columns:
+        enriched_df["route_length_km"] = np.nan
 
     # ==========================================
-    # TODO: EXTENSIBILITY MARKERS FOR DOWNSTREAM ML PIPELINE
+    # TODO: CONTEXTUAL FEATURE EXTENSIBILITY
     # ==========================================
-    # Contextual geographic/temporal features to be joined here in subsequent PRs.
+    # Downstream data engineers should mount API integrations here.
+    # Do NOT append predictive ML logic or classifiers in this module.
     #
-    # df = join_traffic_api(df)       -> 'traffic_level' (Categorical)
-    # df = join_weather_data(df)      -> 'rainfall' (Float mm/hr)
-    # df = join_city_calendar(df)     -> 'event_active', 'festival_type'
-    # df = join_municipal_feeds(df)   -> 'road_closure' (Boolean)
-    # df = join_historical_db(df)     -> 'historical_route_delay' (Rolling mean)
+    # enriched_df = join_live_traffic(enriched_df)       -> 'traffic_level' (Enum/Int)
+    # enriched_df = join_weather_station(enriched_df)    -> 'rainfall' (mm/hr)
+    # enriched_df = join_campus_calendar(enriched_df)    -> 'event_active', 'festival_type'
+    # enriched_df = check_municipal_feeds(enriched_df)   -> 'road_closure' (Boolean)
+    # enriched_df = join_historical_db(enriched_df)      -> 'historical_route_delay' (Float)
     # ==========================================
 
-    return df
+    return enriched_df
