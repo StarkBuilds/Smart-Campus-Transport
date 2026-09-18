@@ -1,0 +1,28 @@
+# Environments and Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python & ML Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+.pytest_cache/
+
+# ML Data Files and Heavy Artifacts
+*.parquet
+*.ndjson
+*.graphml
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
