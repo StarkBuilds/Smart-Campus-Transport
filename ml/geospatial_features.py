@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
+import math
 import polars as pl
 import networkx as nx
 import osmnx as ox
-import math
 
-def haversine_distance_km(lat1, lon1, lat2, lon2):
+def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Fallback straight-line geographic distance calculation."""
-    if any(math.isnan(x) or x is None for x in [lat1, lon1, lat2, lon2]):
+    if any(v is None or math.isnan(v) for v in [lat1, lon1, lat2, lon2]):
         return None
 
     r_earth_km = 6371.0
@@ -20,53 +20,46 @@ def haversine_distance_km(lat1, lon1, lat2, lon2):
 
 def calculate_geospatial_features(df: pl.DataFrame, road_graph: nx.DiGraph, route_metadata: dict = None) -> pl.DataFrame:
     """
-    Enriches the bus telemetry dataframe with geospatial structural features.
-    Accepts:
-        df: Polars DataFrame containing 'latitude', 'longitude', 'next_stop_lat', 'next_stop_lon', 'route_id'
-        road_graph: Projected or unprojected NetworkX/OSMnx graph
-        route_metadata: Dictionary mapping route_id to configured total route length
+    Produces dynamic spatial features from live bus telemetry.
+    Expects df to contain: 'latitude', 'longitude', 'next_stop_latitude', 'next_stop_longitude', 'route_id'
     """
     if route_metadata is None:
         route_metadata = {}
 
-    # --- 1. Vectorized Geographic Distance (distance_to_next_stop_km) ---
+    # Overwrites static ETL calculations with highly accurate dynamic live-to-stop distances
     df = df.with_columns([
-        pl.struct(["latitude", "longitude", "next_stop_lat", "next_stop_lon"]).map_elements(
-            lambda x: haversine_distance_km(x["latitude"], x["longitude"], x["next_stop_lat"], x["next_stop_lon"]),
+        pl.struct(["latitude", "longitude", "next_stop_latitude", "next_stop_longitude"]).map_elements(
+            lambda x: haversine_distance_km(x["latitude"], x["longitude"], x["next_stop_latitude"], x["next_stop_longitude"]),
             return_type=pl.Float64
         ).alias("distance_to_next_stop_km")
     ])
 
-    # --- 2. Graph Traversal (road_distance_km) ---
     road_distances = []
 
-    # We must cross the C-boundary into native Python to traverse the NetworkX graph row-by-row
     for row in df.iter_rows(named=True):
         lat, lon = row.get("latitude"), row.get("longitude")
-        stop_lat, stop_lon = row.get("next_stop_lat"), row.get("next_stop_lon")
+        stop_lat, stop_lon = row.get("next_stop_latitude"), row.get("next_stop_longitude")
 
-        # Invalid or missing coordinates handling
         if any(v is None or math.isnan(v) for v in [lat, lon, stop_lat, stop_lon]):
             road_distances.append(None)
             continue
 
         try:
-            # Snap to nearest physical road nodes
+            # Dynamically snap the live bus coordinate and the stop to the nearest physical asphalt
             u = ox.distance.nearest_nodes(road_graph, X=lon, Y=lat)
             v = ox.distance.nearest_nodes(road_graph, X=stop_lon, Y=stop_lat)
 
-            # Calculate physical road distance (assumes length attribute exists in meters)
+            # Execute Dijkstra's shortest path
             length_meters = nx.shortest_path_length(road_graph, u, v, weight="length")
             road_distances.append(length_meters / 1000.0)
 
-        except (nx.NetworkXNoPath, Exception) as e:
-            # Fallback: If graph is disconnected or unavailable, use Haversine * 1.35 standard penalty
+        except (nx.NetworkXNoPath, Exception):
+            # Graceful Fallback: If graph is disconnected/fails, use Haversine * 1.35 standard detour penalty
             fallback = haversine_distance_km(lat, lon, stop_lat, stop_lon)
             road_distances.append(fallback * 1.35 if fallback else None)
 
     df = df.with_columns(pl.Series("road_distance_km", road_distances))
 
-    # --- 3. Configuration Extraction (route_length_km) ---
     df = df.with_columns([
         pl.col("route_id").map_elements(
             lambda route: route_metadata.get(route, None),
@@ -75,16 +68,15 @@ def calculate_geospatial_features(df: pl.DataFrame, road_graph: nx.DiGraph, rout
     ])
 
     # ==========================================
-    # TODO: EXTENSIBILITY MARKERS FOR ML PIPELINE
+    # TODO: EXTENSIBILITY MARKERS FOR DOWNSTREAM ML PIPELINE
     # ==========================================
-    # The following contextual features will be joined here in subsequent PRs
-    # by the ML Engineering team. Do not add predictive logic below.
+    # Contextual geographic/temporal features to be joined here in subsequent PRs.
     #
-    # df = join_traffic_api(df)       -> generates 'traffic_level' (0-10)
-    # df = join_weather_data(df)      -> generates 'rainfall' (mm/hr)
-    # df = join_city_calendar(df)     -> generates 'event_active', 'festival_type'
-    # df = join_municipal_feeds(df)   -> generates 'road_closure' (boolean)
-    # df = join_historical_db(df)     -> generates 'historical_route_delay' (rolling mean)
+    # df = join_traffic_api(df)       -> 'traffic_level' (Categorical)
+    # df = join_weather_data(df)      -> 'rainfall' (Float mm/hr)
+    # df = join_city_calendar(df)     -> 'event_active', 'festival_type'
+    # df = join_municipal_feeds(df)   -> 'road_closure' (Boolean)
+    # df = join_historical_db(df)     -> 'historical_route_delay' (Rolling mean)
     # ==========================================
 
     return df
