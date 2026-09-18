@@ -59,31 +59,6 @@ const DARK_MAP_STYLE: StyleSpecification = {
       type: "raster",
       source: "esri-dark-base",
     },
-    // The wide neon cyan glow for the campus bus route
-    {
-      id: "campus-route-glow",
-      type: "line",
-      source: "campus-route-source",
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": "#00C8FF",
-        "line-width": 14,
-        "line-opacity": 0.5,
-        "line-blur": 6,
-      },
-    },
-    // The solid Electric Cyan line for the campus bus route
-    {
-      id: "campus-route-line",
-      type: "line",
-      source: "campus-route-source",
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": "#00C8FF",
-        "line-width": 4.5,
-        "line-opacity": 0.95,
-      },
-    },
     // Reference labels layer on top (street names, districts like Khidderpore, Majerhat)
     {
       id: "esri-labels-layer",
@@ -280,6 +255,22 @@ export default function LiveMap({
     }
   }, [mapLoaded, updateSvgPath])
 
+  // Camera framing and immediate re-projection on variant toggle
+  useEffect(() => {
+    if (currentVariant === "traffic_alternate" && mapRef.current) {
+      const map = mapRef.current.getMap()
+      if (map) {
+        map.easeTo({
+          center: [88.3245, 22.5255],
+          zoom: 13.5,
+          duration: 1200,
+        })
+      }
+    }
+    const timer = setTimeout(() => updateSvgPath(), 60)
+    return () => clearTimeout(timer)
+  }, [currentVariant, updateSvgPath])
+
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/5">
       <Map
@@ -416,6 +407,73 @@ export default function LiveMap({
 
             <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
               <Layer {...remainingLineLayer} />
+            </Source>
+          </>
+        )}
+
+        {/* Alternate Detour Mode: MapLibre GPU WebGL Layers (Guarantees 100% visible vibrant colors) */}
+        {currentVariant === "traffic_alternate" && (
+          <>
+            {/* Primary Route shown as faint, muted dashed reference in MapLibre */}
+            <Source id="congested-primary-path" type="geojson" data={routeGeoJSON}>
+              <Layer
+                id="congested-ref-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "#64748B",
+                  "line-width": 2.5,
+                  "line-opacity": 0.4,
+                  "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
+
+            {/* AI Alternate Detour with vibrant traffic status colors */}
+            <Source id="alternate-traffic-route-webgl" type="geojson" data={ALTERNATE_TRAFFIC_ROUTE as any}>
+              {/* Outer Traffic Status Glow Bloom */}
+              <Layer
+                id="alt-traffic-glow"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": [
+                    "match",
+                    ["get", "traffic_status"],
+                    "green",
+                    "#10B981",
+                    "amber",
+                    "#F59E0B",
+                    "red",
+                    "#EF4444",
+                    "#8B5CF6",
+                  ],
+                  "line-width": 14,
+                  "line-opacity": 0.6,
+                  "line-blur": 6,
+                }}
+              />
+              {/* High-Definition Core Traffic Segment */}
+              <Layer
+                id="alt-traffic-core"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": [
+                    "match",
+                    ["get", "traffic_status"],
+                    "green",
+                    "#10B981",
+                    "amber",
+                    "#F59E0B",
+                    "red",
+                    "#EF4444",
+                    "#8B5CF6",
+                  ],
+                  "line-width": 4.5,
+                  "line-opacity": 0.95,
+                }}
+              />
             </Source>
           </>
         )}
