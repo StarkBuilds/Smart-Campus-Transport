@@ -2,132 +2,316 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ============================================
+   SMART CAMPUS TRANSPORT — Global Design System
+   Dark theme with Electric Cyan + Deep Navy
+   ============================================ */
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Map our custom colors to Tailwind utility classes */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart colors for analytics sections */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar (used in dashboard layout) */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Border radius scale */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
+/* ============================================
+   DARK THEME — Deep Space Navy
+   This is the only theme we use (dark mode always on)
+   ============================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.527 0.154 150.069);
-  --primary-foreground: oklch(0.982 0.018 155.826);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.875rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.627 0.194 149.214);
-  --sidebar-primary-foreground: oklch(0.982 0.018 155.826);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Deep space backgrounds */
+  --background: oklch(0.07 0.015 240);       /* #060B18 — page base */
+  --foreground: oklch(0.94 0.01 240);        /* #F0F4F8 — main text */
+
+  /* Card surfaces */
+  --card: oklch(0.11 0.018 240);             /* #0D1421 — card bg */
+  --card-foreground: oklch(0.94 0.01 240);
+
+  /* Popover / dropdown surfaces */
+  --popover: oklch(0.13 0.018 240);          /* #111827 */
+  --popover-foreground: oklch(0.94 0.01 240);
+
+  /* Electric Cyan — the primary interactive color */
+  --primary: oklch(0.78 0.15 200);           /* #00C8FF */
+  --primary-foreground: oklch(0.07 0.015 240);
+
+  /* Muted secondary elements */
+  --secondary: oklch(0.18 0.02 240);
+  --secondary-foreground: oklch(0.85 0.01 240);
+
+  /* Dimmed / subdued text and backgrounds */
+  --muted: oklch(0.16 0.018 240);
+  --muted-foreground: oklch(0.55 0.02 240);  /* #8BA8C4 — labels */
+
+  /* Accent — subtle hover states */
+  --accent: oklch(0.20 0.02 240);
+  --accent-foreground: oklch(0.94 0.01 240);
+
+  /* Danger / destructive */
+  --destructive: oklch(0.60 0.22 25);        /* #EF4444 */
+
+  /* Borders */
+  --border: oklch(0.25 0.02 240 / 60%);
+  --input: oklch(0.20 0.02 240);
+  --ring: oklch(0.78 0.15 200 / 40%);
+
+  /* Border radius base */
+  --radius: 0.75rem;
+
+  /* Analytics chart colors */
+  --chart-1: oklch(0.78 0.15 200);           /* cyan — primary metric */
+  --chart-2: oklch(0.70 0.18 70);            /* amber — delays */
+  --chart-3: oklch(0.60 0.15 160);           /* emerald — on time */
+  --chart-4: oklch(0.60 0.22 25);            /* red — missed */
+  --chart-5: oklch(0.55 0.20 280);           /* purple — predicted */
+
+  /* Dashboard sidebar */
+  --sidebar: oklch(0.09 0.018 240);
+  --sidebar-foreground: oklch(0.94 0.01 240);
+  --sidebar-primary: oklch(0.78 0.15 200);
+  --sidebar-primary-foreground: oklch(0.07 0.015 240);
+  --sidebar-accent: oklch(0.18 0.02 240);
+  --sidebar-accent-foreground: oklch(0.94 0.01 240);
+  --sidebar-border: oklch(0.25 0.02 240 / 40%);
+  --sidebar-ring: oklch(0.78 0.15 200 / 40%);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.448 0.119 151.328);
-  --primary-foreground: oklch(0.982 0.018 155.826);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.723 0.219 149.579);
-  --sidebar-primary-foreground: oklch(0.982 0.018 155.826);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
+/* ============================================
+   BASE STYLES
+   ============================================ */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+    box-sizing: border-box;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
-  }
+
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+    /* Hide the default cursor — our custom cursor replaces it */
+    cursor: none;
   }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100svh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Keep cursor visible on form elements so it feels natural */
+  input, textarea, select, a, button {
+    cursor: none;
+  }
+
+  /* Scrollbar styling to match dark theme */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.78 0.15 200 / 30%);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.78 0.15 200 / 60%);
+  }
+
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: none;
+  }
+}
+
+/* ============================================
+   CUSTOM UTILITY CLASSES
+   Used across multiple components
+   ============================================ */
+@layer utilities {
+  /* Glassmorphism card effect */
+  .glass {
+    background: oklch(0.11 0.018 240 / 70%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid oklch(0.78 0.15 200 / 15%);
+  }
+
+  /* Stronger glass for hero elements */
+  .glass-strong {
+    background: oklch(0.13 0.018 240 / 80%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid oklch(0.78 0.15 200 / 25%);
+  }
+
+  /* Glowing cyan border — used on status badges and live indicators */
+  .glow-cyan {
+    box-shadow: 0 0 20px oklch(0.78 0.15 200 / 30%), 0 0 40px oklch(0.78 0.15 200 / 10%);
+  }
+
+  .glow-cyan-strong {
+    box-shadow: 0 0 30px oklch(0.78 0.15 200 / 50%), 0 0 60px oklch(0.78 0.15 200 / 20%);
+  }
+
+  /* Text gradient — used for headings */
+  .text-gradient {
+    background: linear-gradient(135deg, #fff 0%, #00C8FF 50%, #7C3AED 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-cyan {
+    background: linear-gradient(90deg, #00C8FF, #7EFF6E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Subtle noise texture overlay — adds depth to sections */
+  .noise-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Animated gradient orbs for background atmosphere */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* Pulsing live indicator dot */
+  .pulse-live {
+    animation: pulse-live 2s ease-in-out infinite;
+  }
+
+  /* Status badge colors */
+  .status-on-time { color: #10B981; border-color: #10B981; }
+  .status-delayed { color: #F59E0B; border-color: #F59E0B; }
+  .status-late    { color: #EF4444; border-color: #EF4444; }
+}
+
+/* ============================================
+   KEYFRAME ANIMATIONS
+   ============================================ */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 oklch(0.78 0.15 200 / 60%); }
+  50%       { opacity: 0.8; box-shadow: 0 0 0 8px oklch(0.78 0.15 200 / 0%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(40px, -30px) scale(1.05); }
+  66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(-50px, 30px) scale(0.95); }
+  66%       { transform: translate(30px, -20px) scale(1.08); }
+}
+
+@keyframes scan-line {
+  0%   { top: 0%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: oklch(0.78 0.15 200 / 60%); }
+  50%       { border-color: oklch(0.78 0.15 200 / 100%); }
+}
+
+@keyframes bus-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+.marquee:hover {
+  animation-play-state: paused;
+}
+
+/* MapLibre map container — makes it fill its parent properly */
+.maplibregl-map {
+  border-radius: inherit;
+}
+
+.maplibregl-canvas {
+  border-radius: inherit;
+}
+
+/* Hide MapLibre attribution logo (just the text, keeping it accessible) */
+.maplibregl-ctrl-attrib {
+  display: none !important;
 }

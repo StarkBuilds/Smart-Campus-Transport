@@ -1,17 +1,36 @@
-# Environments
-venv/
-__pycache__/
+# Environments and Secrets
 .env
 *.pyc
+=======
+.env.local
+.env.*.local
+*.env
 
-# Data files
+# Python & ML Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+.pytest_cache/
+
+# ML Data Files and Heavy Artifacts
 *.parquet
 *.ndjson
-*.json
-*.csv
+*.graphml
+*.log
 
-# OS generated files
+# OS & Editor
 .DS_Store
+<<<<<<< HEAD
 
 #map
 kolkata_drive.graphml
+=======
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+>>>>>>> origin/main
