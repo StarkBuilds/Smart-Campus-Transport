@@ -1,0 +1,226 @@
+{
+  "campus_id": "CAMPUS_01",
+  "routes": [
+    {
+      "route_id": "R01",
+      "route_name": "Behala Chowrasta to St. Thomas' College of Engineering and Technology",
+      "start": {
+        "name": "Behala Chowrasta",
+        "latitude": 22.4873548,
+        "longitude": 88.3133794
+      },
+      "end": {
+        "name": "St. Thomas' College of Engineering and Technology",
+        "latitude": 22.5388413,
+        "longitude": 88.3286153
+      },
+      "stops": [
+        {
+          "stop_id": "R01_S01",
+          "stop_name": "Vivekananda College",
+          "latitude": 22.4643285,
+          "longitude": 88.3080559,
+          "sequence": 1
+        },
+        {
+          "stop_id": "R01_S02",
+          "stop_name": "Simultala Bazaar",
+          "latitude": 22.4916643,
+          "longitude": 88.3152017,
+          "sequence": 2
+        },
+        {
+          "stop_id": "R01_S03",
+          "stop_name": "Manton Super Market",
+          "latitude": 22.4948629,
+          "longitude": 88.3166069,
+          "sequence": 3
+        },
+        {
+          "stop_id": "R01_S04",
+          "stop_name": "Behala Tram Depot",
+          "latitude": 22.499411,
+          "longitude": 88.3177975,
+          "sequence": 4
+        },
+        {
+          "stop_id": "R01_S05",
+          "stop_name": "Behala 14 No. Bus Stand",
+          "latitude": 22.5020736,
+          "longitude": 88.3179935,
+          "sequence": 5
+        },
+        {
+          "stop_id": "R01_S06",
+          "stop_name": "Behala Thana",
+          "latitude": 22.5035284,
+          "longitude": 88.3190032,
+          "sequence": 6
+        },
+        {
+          "stop_id": "R01_S07",
+          "stop_name": "Pathak Para",
+          "latitude": 22.5069035,
+          "longitude": 88.3161189,
+          "sequence": 7
+        },
+        {
+          "stop_id": "R01_S08",
+          "stop_name": "Taratala",
+          "latitude": 22.5076863,
+          "longitude": 88.3203842,
+          "sequence": 8
+        },
+        {
+          "stop_id": "R01_S09",
+          "stop_name": "Mint",
+          "latitude": 22.5150469,
+          "longitude": 88.3214059,
+          "sequence": 9
+        },
+        {
+          "stop_id": "R01_S10",
+          "stop_name": "Burdwan Road",
+          "latitude": 22.5222288,
+          "longitude": 88.3273438,
+          "sequence": 10
+        },
+        {
+          "stop_id": "R01_S11",
+          "stop_name": "Remount Road",
+          "latitude": 22.5251355,
+          "longitude": 88.3210913,
+          "sequence": 11
+        },
+        {
+          "stop_id": "R01_S12",
+          "stop_name": "Mominpore",
+          "latitude": 22.5270528,
+          "longitude": 88.3260988,
+          "sequence": 12
+        },
+        {
+          "stop_id": "R01_S13",
+          "stop_name": "Mayurbhanj",
+          "latitude": 22.5293863,
+          "longitude": 88.3224229,
+          "sequence": 13
+        },
+        {
+          "stop_id": "R01_S14",
+          "stop_name": "Ekbalpore Crossing",
+          "latitude": 22.533306,
+          "longitude": 88.3272361,
+          "sequence": 14
+        },
+        {
+          "stop_id": "R01_S15",
+          "stop_name": "Alipore Bodyguard Line",
+          "latitude": 22.52156,
+          "longitude": 88.3324584,
+          "sequence": 15
+        },
+        {
+          "stop_id": "R01_S16",
+          "stop_name": "St. Thomas' College of Engineering and Technology",
+          "latitude": 22.5388413,
+          "longitude": 88.3286153,
+          "sequence": 16
+        }
+      ]
+    },
+    {
+      "route_id": "R02",
+      "route_name": "Hazra Crossing to St. Thomas' College of Engineering and Technology",
+      "start": {
+        "name": "Hazra Crossing",
+        "latitude": 22.5227232,
+        "longitude": 88.3499241
+      },
+      "end": {
+        "name": "St. Thomas' College of Engineering and Technology",
+        "latitude": 22.5388413,
+        "longitude": 88.3286153
+      },
+      "stops": [
+        {
+          "stop_id": "R02_S01",
+          "stop_name": "Kalighat",
+          "latitude": 22.5153313,
+          "longitude": 88.3477052,
+          "sequence": 1
+        },
+        {
+          "stop_id": "R02_S02",
+          "stop_name": "Gopal Nagar",
+          "latitude": 22.5213296,
+          "longitude": 88.3376655,
+          "sequence": 2
+        },
+        {
+          "stop_id": "R02_S03",
+          "stop_name": "Hastings Park Road",
+          "latitude": 22.5254703,
+          "longitude": 88.3346571,
+          "sequence": 3
+        },
+        {
+          "stop_id": "R02_S04",
+          "stop_name": "Alipore - Bhabani Bhawan",
+          "latitude": 22.5341344,
+          "longitude": 88.3321577,
+          "sequence": 4
+        },
+        {
+          "stop_id": "R02_S05",
+          "stop_name": "Central Quarter",
+          "latitude": 22.5341344,
+          "longitude": 88.3321577,
+          "sequence": 5
+        },
+        {
+          "stop_id": "R02_S06",
+          "stop_name": "Jail Gate",
+          "latitude": 22.5251726,
+          "longitude": 88.3395697,
+          "sequence": 6
+        },
+        {
+          "stop_id": "R02_S07",
+          "stop_name": "National Library",
+          "latitude": 22.532557,
+          "longitude": 88.333483,
+          "sequence": 7
+        },
+        {
+          "stop_id": "R02_S08",
+          "stop_name": "Kothari Hospital",
+          "latitude": 22.5327346,
+          "longitude": 88.3305487,
+          "sequence": 8
+        },
+        {
+          "stop_id": "R02_S09",
+          "stop_name": "BM Birla Heart Hospital",
+          "latitude": 22.5327858,
+          "longitude": 88.3283256,
+          "sequence": 9
+        },
+        {
+          "stop_id": "R02_S10",
+          "stop_name": "Alipore Bodyguard Line",
+          "latitude": 22.52156,
+          "longitude": 88.3324584,
+          "sequence": 10
+        },
+        {
+          "stop_id": "R02_S11",
+          "stop_name": "St. Thomas' College of Engineering and Technology",
+          "latitude": 22.5388413,
+          "longitude": 88.3286153,
+          "sequence": 11
+        }
+      ]
+    }
+  ]
+}
