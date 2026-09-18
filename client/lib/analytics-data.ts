@@ -7,8 +7,6 @@ export interface HourlyTelemetryPoint {
   hour: number
   avg_speed_kmh: number
   ml_confidence_pct: number
-  confidence_lower_bound: number
-  confidence_upper_bound: number
   active_buses: number
   is_rush_hour: boolean
   delay_minutes: number
@@ -21,7 +19,6 @@ export interface StopArrivalVariance {
   actual_time: string
   delay_minutes: number
   traffic_level: "low" | "medium" | "high" | "severe"
-  boarding_passengers: number
 }
 
 export interface FleetRouteMetric {
@@ -50,8 +47,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 7,
     avg_speed_kmh: 42.1,
     ml_confidence_pct: 82.5,
-    confidence_lower_bound: 79.0,
-    confidence_upper_bound: 86.0,
     active_buses: 4,
     is_rush_hour: false,
     delay_minutes: 0.5,
@@ -61,8 +56,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 8,
     avg_speed_kmh: 24.6,
     ml_confidence_pct: 58.2,
-    confidence_lower_bound: 52.0,
-    confidence_upper_bound: 64.5,
     active_buses: 8,
     is_rush_hour: true,
     delay_minutes: 6.4,
@@ -72,8 +65,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 9,
     avg_speed_kmh: 18.2,
     ml_confidence_pct: 49.5,
-    confidence_lower_bound: 43.0,
-    confidence_upper_bound: 56.0,
     active_buses: 9,
     is_rush_hour: true,
     delay_minutes: 9.8,
@@ -83,8 +74,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 10,
     avg_speed_kmh: 26.5,
     ml_confidence_pct: 64.0,
-    confidence_lower_bound: 59.0,
-    confidence_upper_bound: 69.0,
     active_buses: 7,
     is_rush_hour: true,
     delay_minutes: 4.2,
@@ -94,8 +83,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 11,
     avg_speed_kmh: 36.8,
     ml_confidence_pct: 78.4,
-    confidence_lower_bound: 74.0,
-    confidence_upper_bound: 82.8,
     active_buses: 4,
     is_rush_hour: false,
     delay_minutes: 1.1,
@@ -105,8 +92,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 12,
     avg_speed_kmh: 34.5,
     ml_confidence_pct: 71.6,
-    confidence_lower_bound: 67.2,
-    confidence_upper_bound: 76.0,
     active_buses: 5,
     is_rush_hour: false,
     delay_minutes: 2.0,
@@ -116,8 +101,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 13,
     avg_speed_kmh: 37.3,
     ml_confidence_pct: 74.3,
-    confidence_lower_bound: 70.0,
-    confidence_upper_bound: 78.6,
     active_buses: 4,
     is_rush_hour: false,
     delay_minutes: 1.5,
@@ -127,8 +110,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 14,
     avg_speed_kmh: 23.4,
     ml_confidence_pct: 54.7,
-    confidence_lower_bound: 48.9,
-    confidence_upper_bound: 60.5,
     active_buses: 6,
     is_rush_hour: false,
     delay_minutes: 5.8,
@@ -138,8 +119,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 15,
     avg_speed_kmh: 32.3,
     ml_confidence_pct: 68.2,
-    confidence_lower_bound: 63.5,
-    confidence_upper_bound: 73.0,
     active_buses: 6,
     is_rush_hour: false,
     delay_minutes: 2.8,
@@ -149,8 +128,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 16,
     avg_speed_kmh: 36.3,
     ml_confidence_pct: 73.0,
-    confidence_lower_bound: 68.5,
-    confidence_upper_bound: 77.5,
     active_buses: 8,
     is_rush_hour: false,
     delay_minutes: 2.4,
@@ -160,8 +137,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 17,
     avg_speed_kmh: 21.0,
     ml_confidence_pct: 52.6,
-    confidence_lower_bound: 46.5,
-    confidence_upper_bound: 58.7,
     active_buses: 9,
     is_rush_hour: true,
     delay_minutes: 8.5,
@@ -171,8 +146,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 18,
     avg_speed_kmh: 19.5,
     ml_confidence_pct: 50.8,
-    confidence_lower_bound: 44.0,
-    confidence_upper_bound: 57.6,
     active_buses: 9,
     is_rush_hour: true,
     delay_minutes: 9.1,
@@ -182,8 +155,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 19,
     avg_speed_kmh: 28.6,
     ml_confidence_pct: 66.5,
-    confidence_lower_bound: 61.2,
-    confidence_upper_bound: 71.8,
     active_buses: 7,
     is_rush_hour: true,
     delay_minutes: 4.8,
@@ -193,8 +164,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 20,
     avg_speed_kmh: 35.8,
     ml_confidence_pct: 73.5,
-    confidence_lower_bound: 69.0,
-    confidence_upper_bound: 78.0,
     active_buses: 5,
     is_rush_hour: false,
     delay_minutes: 2.1,
@@ -204,8 +173,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 21,
     avg_speed_kmh: 39.4,
     ml_confidence_pct: 76.8,
-    confidence_lower_bound: 72.5,
-    confidence_upper_bound: 81.1,
     active_buses: 3,
     is_rush_hour: false,
     delay_minutes: 0.8,
@@ -215,8 +182,6 @@ export const HOURLY_TELEMETRY_DATA: HourlyTelemetryPoint[] = [
     hour: 22,
     avg_speed_kmh: 44.0,
     ml_confidence_pct: 84.2,
-    confidence_lower_bound: 80.5,
-    confidence_upper_bound: 88.0,
     active_buses: 2,
     is_rush_hour: false,
     delay_minutes: 0.2,
@@ -231,7 +196,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:01 AM",
     delay_minutes: 1.0,
     traffic_level: "low",
-    boarding_passengers: 18,
   },
   {
     stop_id: "STOP-BEHALA",
@@ -240,7 +204,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:13 AM",
     delay_minutes: 3.2,
     traffic_level: "medium",
-    boarding_passengers: 24,
   },
   {
     stop_id: "STOP-NEW-ALIPORE",
@@ -249,7 +212,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:25 AM",
     delay_minutes: 5.1,
     traffic_level: "medium",
-    boarding_passengers: 15,
   },
   {
     stop_id: "STOP-MAJERHAT",
@@ -258,7 +220,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:36 AM",
     delay_minutes: 8.4,
     traffic_level: "severe",
-    boarding_passengers: 32,
   },
   {
     stop_id: "STOP-GARDEN-REACH",
@@ -267,7 +228,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:44 AM",
     delay_minutes: 9.1,
     traffic_level: "high",
-    boarding_passengers: 12,
   },
   {
     stop_id: "STOP-CAMPUS",
@@ -276,7 +236,6 @@ export const STOP_ARRIVAL_VARIANCES: StopArrivalVariance[] = [
     actual_time: "08:52 AM",
     delay_minutes: 7.2,
     traffic_level: "medium",
-    boarding_passengers: 0,
   },
 ]
 

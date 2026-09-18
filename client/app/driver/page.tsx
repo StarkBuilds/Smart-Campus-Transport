@@ -164,12 +164,16 @@ export default function DriverDashboard() {
                     driverRouteVariant === "standard" ? "traffic_alternate" : "standard"
                   )
                 }
-                className="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                className={`mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                  driverRouteVariant === "traffic_alternate"
+                    ? "bg-purple-500/30 text-purple-200 border border-purple-400/50 shadow-purple-500/20"
+                    : "bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
+                }`}
               >
-                <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                <Zap className="w-3.5 h-3.5 text-purple-400" />
                 {driverRouteVariant === "traffic_alternate"
-                  ? "Revert to Primary Route"
-                  : "Engage AI Alternate Route"}
+                  ? "✓ AI Detour Active (Revert to Primary)"
+                  : "Engage AI Detour (Violet ~8 min saved)"}
               </button>
             </motion.div>
           )}

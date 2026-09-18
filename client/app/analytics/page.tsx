@@ -361,7 +361,7 @@ export default function AnalyticsPage() {
                     ML Forecast Confidence vs. Average Fleet Velocity
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Demonstrates the inverse relationship: When road speeds drop in Kolkata congestion, model confidence boundaries widen.
+                    Demonstrates the inverse relationship: Road speeds drop during Kolkata peak congestion hours while ML confidence tracks traffic stability.
                   </p>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-mono">
@@ -399,9 +399,6 @@ export default function AnalyticsPage() {
                               <p className="font-bold text-white mb-1.5">{label}</p>
                               <p className="text-cyan-400 font-mono">Velocity: {payload[0]?.value} km/h</p>
                               <p className="text-emerald-400 font-mono">ML Confidence: {payload[1]?.value}%</p>
-                              <p className="text-muted-foreground text-[10px] mt-1">
-                                Bounds: {payload[1]?.payload?.confidence_lower_bound}% – {payload[1]?.payload?.confidence_upper_bound}%
-                              </p>
                             </div>
                           )
                         }
@@ -510,7 +507,7 @@ export default function AnalyticsPage() {
                                 <span className="text-muted-foreground">Scheduled: {data.scheduled_time}</span>
                                 <span className="text-cyan-400">Actual GPS: {data.actual_time}</span>
                                 <span className="text-red-400 font-bold">Delay: +{data.delay_minutes} min</span>
-                                <span className="text-emerald-400">Waiting Passengers: {data.boarding_passengers}</span>
+                                <span className="text-emerald-400">Congestion: {data.traffic_level.toUpperCase()}</span>
                               </div>
                             </div>
                           )
@@ -540,7 +537,7 @@ export default function AnalyticsPage() {
                     <th className="p-3.5">Actual GPS</th>
                     <th className="p-3.5">Delay Variance</th>
                     <th className="p-3.5">Congestion Level</th>
-                    <th className="p-3.5 text-right">Student Queue</th>
+                    <th className="p-3.5 text-right">Route Efficiency</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
@@ -565,7 +562,15 @@ export default function AnalyticsPage() {
                       <td className="p-3.5 uppercase text-[10px] tracking-wider text-muted-foreground">
                         {stop.traffic_level}
                       </td>
-                      <td className="p-3.5 text-right text-white font-bold">{stop.boarding_passengers} students</td>
+                      <td className="p-3.5 text-right font-mono">
+                        <span
+                          className={`text-[11px] font-semibold ${
+                            stop.delay_minutes > 5 ? "text-amber-400" : "text-emerald-400"
+                          }`}
+                        >
+                          {stop.delay_minutes > 5 ? "Reroute Rec." : "Optimal (98%)"}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

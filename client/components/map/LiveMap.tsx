@@ -208,6 +208,7 @@ export default function LiveMap({
 
   // Screen-projected SVG route lines — converts GPS coordinates directly to container pixels
   const [svgPath, setSvgPath] = useState("")
+  const [altSvgPath, setAltSvgPath] = useState("")
   const [projectedSegments, setProjectedSegments] = useState<ProjectedSegment[]>([])
 
   const updateSvgPath = useCallback(() => {
@@ -223,13 +224,21 @@ export default function LiveMap({
         setSvgPath(`M ${pts.join(" L ")}`)
       }
 
-      // 2. Project 22 Alternate Traffic Route Segments with exact traffic status colors
+      // 2. Project 22 Alternate Traffic Route Segments & Continuous Detour Spine
       const segs: ProjectedSegment[] = []
+      const altPts: string[] = []
+
       ALTERNATE_TRAFFIC_ROUTE.features.forEach((feat, i) => {
         const [c1, c2] = feat.geometry.coordinates
         if (c1 && c2) {
           const p1 = map.project(c1)
           const p2 = map.project(c2)
+
+          if (i === 0) {
+            altPts.push(`${p1.x.toFixed(1)},${p1.y.toFixed(1)}`)
+          }
+          altPts.push(`${p2.x.toFixed(1)},${p2.y.toFixed(1)}`)
+
           const status = feat.properties.traffic_status
           segs.push({
             id: i,
@@ -245,6 +254,10 @@ export default function LiveMap({
           })
         }
       })
+
+      if (altPts.length > 1) {
+        setAltSvgPath(`M ${altPts.join(" L ")}`)
+      }
       setProjectedSegments(segs)
     } catch {
       // Map projection not ready yet
@@ -293,7 +306,7 @@ export default function LiveMap({
         {/* Guaranteed High-Definition Screen-Projected Neon Route Lines */}
         <div className="absolute inset-0 pointer-events-none z-10 overflow-visible">
           <svg className="w-full h-full" style={{ overflow: "visible" }}>
-            {/* Standard Primary Route Line */}
+            {/* Standard Primary Route Line (Electric Cyan) */}
             {currentVariant === "standard" && svgPath && (
               <>
                 {/* Outer Cyan Neon Bloom */}
@@ -321,7 +334,48 @@ export default function LiveMap({
               </>
             )}
 
-            {/* AI Alternate Route: 22 Traffic Status Colored Segments */}
+            {/* When Alternate Route is active: Show primary route as faint, muted dashed gray reference line */}
+            {currentVariant === "traffic_alternate" && svgPath && (
+              <path
+                d={svgPath}
+                fill="none"
+                stroke="#64748B"
+                strokeWidth="2.5"
+                strokeOpacity="0.35"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="6 6"
+              />
+            )}
+
+            {/* AI Alternate Route: Continuous Glowing Electric Violet Foundation (Distinct from Cyan) */}
+            {currentVariant === "traffic_alternate" && altSvgPath && (
+              <>
+                {/* Wide Violet Detour Aura */}
+                <path
+                  d={altSvgPath}
+                  fill="none"
+                  stroke="#8B5CF6"
+                  strokeWidth="16"
+                  strokeOpacity="0.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ filter: "blur(8px)" }}
+                />
+                {/* Electric Violet Detour Guideway */}
+                <path
+                  d={altSvgPath}
+                  fill="none"
+                  stroke="#A855F7"
+                  strokeWidth="5.5"
+                  strokeOpacity="0.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
+            )}
+
+            {/* AI Alternate Route: 22 Traffic-Graded Segments on top */}
             {currentVariant === "traffic_alternate" &&
               projectedSegments.map((seg) => (
                 <g key={`traffic-seg-${seg.id}`}>
@@ -332,10 +386,10 @@ export default function LiveMap({
                     x2={seg.x2}
                     y2={seg.y2}
                     stroke={seg.color}
-                    strokeWidth="14"
-                    strokeOpacity="0.45"
+                    strokeWidth="10"
+                    strokeOpacity="0.6"
                     strokeLinecap="round"
-                    style={{ filter: "blur(6px)" }}
+                    style={{ filter: "blur(4px)" }}
                   />
                   {/* Core High-Definition Traffic Segment */}
                   <line
@@ -344,7 +398,7 @@ export default function LiveMap({
                     x2={seg.x2}
                     y2={seg.y2}
                     stroke={seg.color}
-                    strokeWidth="4.5"
+                    strokeWidth="3.5"
                     strokeLinecap="round"
                   />
                 </g>
@@ -352,16 +406,19 @@ export default function LiveMap({
           </svg>
         </div>
 
-        {/* Traveled Path: highlighted Electric Cyan with neon bloom */}
-        <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
-          <Layer {...traveledGlowLayer} />
-          <Layer {...traveledLineLayer} />
-        </Source>
+        {/* Traveled and Remaining Paths: only shown in standard mode so cyan never clashes with alternate route */}
+        {currentVariant === "standard" && (
+          <>
+            <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
+              <Layer {...traveledGlowLayer} />
+              <Layer {...traveledLineLayer} />
+            </Source>
 
-        {/* Remaining Path: dashed futuristic path leading to STCET campus */}
-        <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
-          <Layer {...remainingLineLayer} />
-        </Source>
+            <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
+              <Layer {...remainingLineLayer} />
+            </Source>
+          </>
+        )}
 
         {/* Bus stop markers */}
         {BUS_STOPS.map((stop) => {
@@ -534,14 +591,14 @@ export default function LiveMap({
             onClick={() => setVariant("traffic_alternate")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
               currentVariant === "traffic_alternate"
-                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                ? "bg-purple-500/25 text-purple-300 border border-purple-400/50 shadow-lg shadow-purple-500/10"
                 : "text-muted-foreground hover:text-white"
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>AI Alternate Route</span>
-            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded font-mono font-bold">
-              22 Segments
+            <Zap className="w-3.5 h-3.5 text-purple-400" />
+            <span>AI Alternate Detour</span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded font-mono font-bold">
+              Violet &bull; 22 Segments
             </span>
           </button>
         </div>
@@ -551,9 +608,12 @@ export default function LiveMap({
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 px-3.5 py-1 rounded-full border border-white/10 text-[10px] font-mono shadow-lg backdrop-blur-md"
-            style={{ background: "rgba(7,13,30,0.92)" }}
+            className="flex items-center gap-3 px-3.5 py-1 rounded-full border border-purple-500/30 text-[10px] font-mono shadow-xl backdrop-blur-md"
+            style={{ background: "rgba(10,8,25,0.92)" }}
           >
+            <div className="flex items-center gap-1.5 text-purple-300 font-bold border-r border-white/10 pr-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" /> Detour Path
+            </div>
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-400" /> &gt;30 km/h
             </span>
@@ -561,7 +621,7 @@ export default function LiveMap({
               <span className="w-2 h-2 rounded-full bg-amber-400" /> 15-30 km/h
             </span>
             <span className="flex items-center gap-1 text-red-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-red-400" /> &lt;15 km/h (Bottleneck)
+              <span className="w-2 h-2 rounded-full bg-red-400" /> &lt;15 km/h (Choke)
             </span>
           </motion.div>
         )}
