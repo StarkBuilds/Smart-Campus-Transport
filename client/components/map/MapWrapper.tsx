@@ -13,10 +13,10 @@ import type { LiveBusData } from "@/types/bus"
 const LiveMap = dynamic(() => import("@/components/map/LiveMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full rounded-2xl bg-[#060B18] flex items-center justify-center border border-white/5">
+    <div className="w-full h-full rounded-2xl bg-[#FAF8F5] flex items-center justify-center border border-[#DDD7CB]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-full border-2 border-cyan-400/20 border-t-cyan-400 animate-spin" />
-        <p className="text-sm text-muted-foreground">Initializing map...</p>
+        <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-600 animate-spin" />
+        <p className="text-sm text-[#78716C]">Initializing campus map...</p>
       </div>
     </div>
   ),
