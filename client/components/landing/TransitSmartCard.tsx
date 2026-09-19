@@ -1,12 +1,12 @@
 "use client"
 
-// TransitSmartCard — Exact PrepPass 3D Admit Card physics and aesthetics
+// TransitSmartCard — Ultra-Luxury Royal Champagne Gold & Pearlescent Light Pass
 // Features:
 // 1. Float animation (smooth continuous hovering)
-// 2. Mouse tracking 3D tilt with dynamic glare highlight
+// 2. Mouse tracking 3D tilt with dynamic warm champagne glare highlight
 // 3. Interactive click-to-flip (180° 3D card rotation with preserve-3d)
-// 4. Holographic foil shine sweep + laser scan-line + pulsing corner brackets
-// 5. Front: STCET Student Transit Pass with live telemetry & ETA
+// 4. Gold foil holographic shine sweep + laser scan-line + pulsing corner brackets
+// 5. Front: STCET Verified Student Transit Pass for Sohom Giri with live telemetry & ETA
 // 6. Back: Digital security barcode, QR pass scanner, driver contact & gate verification
 
 import React, { useRef, useCallback, useState } from "react"
@@ -17,7 +17,7 @@ export default function TransitSmartCard() {
   const glareRef = useRef<HTMLDivElement>(null)
   const [isFlipped, setIsFlipped] = useState(false)
 
-  // 3D Tilt calculation matching PrepPass
+  // 3D Tilt calculation
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const tiltNode = tiltRef.current
     const glareNode = glareRef.current
@@ -29,15 +29,15 @@ export default function TransitSmartCard() {
     const centerX = rect.width / 2
     const centerY = rect.height / 2
 
-    const rotateX = ((y - centerY) / centerY) * -12
-    const rotateY = ((x - centerX) / centerX) * 12
+    const rotateX = ((y - centerY) / centerY) * -10
+    const rotateY = ((x - centerX) / centerX) * 10
 
-    tiltNode.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.04, 1.04, 1.04)`
+    tiltNode.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`
 
     if (glareNode) {
       const glareX = (x / rect.width) * 100
       const glareY = (y / rect.height) * 100
-      glareNode.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.35) 0%, rgba(0,200,255,0.15) 35%, transparent 70%)`
+      glareNode.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.7) 0%, rgba(245,230,190,0.3) 35%, transparent 70%)`
       glareNode.style.opacity = "1"
     }
   }, [])
@@ -66,47 +66,43 @@ export default function TransitSmartCard() {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-visible select-none py-6">
-      {/* Embedded keyframe styles matching PrepPass */}
+      {/* Embedded keyframe styles */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes cardFloat {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-16px); }
+          50% { transform: translateY(-14px); }
         }
         @keyframes statusPulse {
-          0%, 100% { opacity: 0.8; }
-          50% { opacity: 1; text-shadow: 0 0 14px rgba(0, 200, 255, 0.7); }
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; text-shadow: 0 0 14px rgba(212, 175, 55, 0.6); }
         }
         @keyframes scanLine {
           0% { top: 4%; opacity: 0; }
-          10% { opacity: 0.9; }
-          90% { opacity: 0.9; }
+          10% { opacity: 0.8; }
+          90% { opacity: 0.8; }
           100% { top: 94%; opacity: 0; }
         }
-        @keyframes borderShift {
+        @keyframes goldBorderShift {
           0%, 100% {
-            border-color: rgba(0, 200, 255, 0.85);
-            box-shadow: 0 0 35px rgba(0, 200, 255, 0.4), 0 0 90px rgba(0, 200, 255, 0.15), 0 25px 60px rgba(0,0,0,0.8);
+            border-color: rgba(212, 175, 55, 0.85);
+            box-shadow: 0 18px 45px rgba(120, 113, 108, 0.14), 0 0 30px rgba(212, 175, 55, 0.25);
           }
-          33% {
-            border-color: rgba(124, 58, 237, 0.85);
-            box-shadow: 0 0 35px rgba(124, 58, 237, 0.4), 0 0 90px rgba(124, 58, 237, 0.15), 0 25px 60px rgba(0,0,0,0.8);
-          }
-          66% {
-            border-color: rgba(16, 185, 129, 0.85);
-            box-shadow: 0 0 35px rgba(16, 185, 129, 0.4), 0 0 90px rgba(16, 185, 129, 0.15), 0 25px 60px rgba(0,0,0,0.8);
+          50% {
+            border-color: rgba(30, 64, 175, 0.7);
+            box-shadow: 0 18px 45px rgba(120, 113, 108, 0.14), 0 0 30px rgba(30, 64, 175, 0.2);
           }
         }
         @keyframes cornerPulse {
-          0%, 100% { opacity: 0.6; filter: brightness(1); }
-          50% { opacity: 1; filter: brightness(1.6); box-shadow: 0 0 15px currentColor; }
+          0%, 100% { opacity: 0.7; filter: brightness(1); }
+          50% { opacity: 1; filter: brightness(1.4); }
         }
         @keyframes holoShine {
           0% { left: -100%; }
           100% { left: 200%; }
         }
         @keyframes clickHint {
-          0%, 100% { opacity: 0.4; transform: translateY(2px); }
-          50% { opacity: 0.9; transform: translateY(0); }
+          0%, 100% { opacity: 0.5; transform: translateY(2px); }
+          50% { opacity: 1; transform: translateY(0); }
         }
         .transit-float {
           animation: cardFloat 5.5s ease-in-out infinite;
@@ -118,18 +114,18 @@ export default function TransitSmartCard() {
           height: 100%;
           backface-visibility: hidden;
           -webkit-backface-visibility: hidden;
-          border-radius: 20px;
+          border-radius: 24px;
           overflow: hidden;
-          animation: borderShift 7s ease-in-out infinite;
+          animation: goldBorderShift 7s ease-in-out infinite;
         }
       `}} />
 
-      {/* Glowing atmospheric aura behind card */}
+      {/* Warm champagne & gold aura behind card */}
       <div
-        className="absolute w-[380px] h-[520px] sm:w-[440px] sm:h-[580px] rounded-full pointer-events-none"
+        className="absolute w-[360px] h-[500px] sm:w-[420px] sm:h-[560px] rounded-full pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse, rgba(0,200,255,0.22) 0%, rgba(124,58,237,0.14) 40%, transparent 70%)",
-          filter: "blur(60px)",
+          background: "radial-gradient(ellipse, rgba(254,243,199,0.5) 0%, rgba(253,230,138,0.3) 35%, rgba(219,234,254,0.2) 65%, transparent 75%)",
+          filter: "blur(50px)",
           animation: "statusPulse 4s ease-in-out infinite",
         }}
       />
@@ -157,31 +153,31 @@ export default function TransitSmartCard() {
               transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
             }}
           >
-            {/* ════════════════ FRONT FACE ════════════════ */}
+            {/* ════════════════ FRONT FACE (ROYAL CHAMPAGNE LIGHT) ════════════════ */}
             <div
               className="transit-face"
               style={{
-                background: "linear-gradient(155deg, #0d152a 0%, #060b18 45%, #0b1126 100%)",
-                border: "2.5px solid rgba(0, 200, 255, 0.8)",
+                background: "linear-gradient(155deg, #FAF8F5 0%, #F5EFE6 45%, #EFE7D8 100%)",
+                border: "2px solid rgba(212, 175, 55, 0.85)",
                 transform: "rotateY(0deg)",
               }}
             >
-              {/* Internal Color Washes */}
+              {/* Internal Pearlescent Color Washes */}
               <div
                 className="absolute inset-0 rounded-2xl pointer-events-none"
                 style={{
                   background:
-                    "radial-gradient(ellipse at 10% 10%, rgba(0,200,255,0.2) 0%, transparent 50%), radial-gradient(ellipse at 90% 90%, rgba(124,58,237,0.18) 0%, transparent 50%)",
+                    "radial-gradient(ellipse at 15% 15%, rgba(254,243,199,0.7) 0%, transparent 50%), radial-gradient(ellipse at 85% 85%, rgba(219,234,254,0.5) 0%, transparent 50%)",
                 }}
               />
 
-              {/* Holographic Shine */}
+              {/* Holographic Gold Foil Sweep */}
               <div
                 className="absolute top-0 h-full w-[80%] pointer-events-none"
                 style={{
                   background:
-                    "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.08) 45%, rgba(0,200,255,0.15) 50%, rgba(255,255,255,0.06) 55%, transparent 80%)",
-                  animation: "holoShine 4s ease-in-out infinite",
+                    "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 45%, rgba(253,230,138,0.45) 50%, rgba(255,255,255,0.3) 55%, transparent 80%)",
+                  animation: "holoShine 4.5s ease-in-out infinite",
                 }}
               />
 
@@ -192,54 +188,54 @@ export default function TransitSmartCard() {
                 style={{ opacity: 0 }}
               />
 
-              {/* Glowing Corner Accents */}
+              {/* Corner Accents in Champagne Gold & Royal Navy */}
               <div
-                className="absolute top-0 left-0 w-14 h-14"
+                className="absolute top-0 left-0 w-14 h-14 pointer-events-none"
                 style={{
-                  borderTop: "3px solid #00C8FF",
-                  borderLeft: "3px solid #00C8FF",
-                  borderRadius: "18px 0 0 0",
+                  borderTop: "3px solid #D4AF37",
+                  borderLeft: "3px solid #D4AF37",
+                  borderRadius: "22px 0 0 0",
                   animation: "cornerPulse 2s ease-in-out infinite",
-                  color: "#00C8FF",
+                  color: "#D4AF37",
                 }}
               />
               <div
-                className="absolute top-0 right-0 w-14 h-14"
+                className="absolute top-0 right-0 w-14 h-14 pointer-events-none"
                 style={{
-                  borderTop: "3px solid #10B981",
-                  borderRight: "3px solid #10B981",
-                  borderRadius: "0 18px 0 0",
+                  borderTop: "3px solid #1E40AF",
+                  borderRight: "3px solid #1E40AF",
+                  borderRadius: "0 22px 0 0",
                   animation: "cornerPulse 2s ease-in-out infinite 0.5s",
-                  color: "#10B981",
+                  color: "#1E40AF",
                 }}
               />
               <div
-                className="absolute bottom-0 left-0 w-14 h-14"
+                className="absolute bottom-0 left-0 w-14 h-14 pointer-events-none"
                 style={{
-                  borderBottom: "3px solid #7C3AED",
-                  borderLeft: "3px solid #7C3AED",
-                  borderRadius: "0 0 0 18px",
+                  borderBottom: "3px solid #1E40AF",
+                  borderLeft: "3px solid #1E40AF",
+                  borderRadius: "0 0 0 22px",
                   animation: "cornerPulse 2s ease-in-out infinite 1s",
-                  color: "#7C3AED",
+                  color: "#1E40AF",
                 }}
               />
               <div
-                className="absolute bottom-0 right-0 w-14 h-14"
+                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none"
                 style={{
-                  borderBottom: "3px solid #00C8FF",
-                  borderRight: "3px solid #00C8FF",
-                  borderRadius: "0 0 18px 0",
+                  borderBottom: "3px solid #D4AF37",
+                  borderRight: "3px solid #D4AF37",
+                  borderRadius: "0 0 22px 0",
                   animation: "cornerPulse 2s ease-in-out infinite 1.5s",
-                  color: "#00C8FF",
+                  color: "#D4AF37",
                 }}
               />
 
-              {/* Laser scan line */}
+              {/* Laser Scan Line */}
               <div
                 className="absolute left-4 right-4 h-[2px] z-20 pointer-events-none"
                 style={{
-                  background: "linear-gradient(90deg, transparent, #00C8FF, #10B981, transparent)",
-                  boxShadow: "0 0 12px #00C8FF",
+                  background: "linear-gradient(90deg, transparent, #D4AF37, #1E40AF, transparent)",
+                  boxShadow: "0 0 10px rgba(212, 175, 55, 0.8)",
                   animation: "scanLine 3.5s ease-in-out infinite",
                 }}
               />
@@ -247,96 +243,96 @@ export default function TransitSmartCard() {
               {/* FRONT: HEADER */}
               <div
                 className="relative px-6 pt-5 pb-3.5"
-                style={{ borderBottom: "1px solid rgba(0,200,255,0.2)" }}
+                style={{ borderBottom: "1px solid rgba(212, 175, 55, 0.3)" }}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <h3
-                      className="font-heading text-base sm:text-lg tracking-[0.25em] font-bold"
+                      className="font-heading text-base sm:text-lg tracking-[0.22em] font-extrabold"
                       style={{
-                        background: "linear-gradient(135deg, #FFF 0%, #00C8FF 50%, #7C3AED 100%)",
+                        background: "linear-gradient(135deg, #1E3A8A 0%, #B45309 60%, #D4AF37 100%)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
-                        filter: "drop-shadow(0 0 10px rgba(0,200,255,0.6))",
                       }}
                     >
                       STCET SMARTPASS
                     </h3>
-                    <p className="text-[10px] text-white/50 tracking-[0.15em] mt-0.5 font-mono">
+                    <p className="text-[10px] text-[#78716C] tracking-[0.15em] mt-0.5 font-mono font-semibold">
                       CAMPUS TRANSIT PASS 2026
                     </p>
                   </div>
                   <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center glow-cyan"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center shadow-xs"
                     style={{
-                      background: "rgba(0,200,255,0.15)",
-                      border: "1px solid rgba(0,200,255,0.4)",
+                      background: "linear-gradient(135deg, #FEF3C7, #FDE68A)",
+                      border: "1.5px solid #FCD34D",
                     }}
                   >
-                    <Bus className="w-5 h-5 text-cyan-400" />
+                    <Bus className="w-5 h-5 text-[#B45309]" />
                   </div>
                 </div>
               </div>
 
               {/* FRONT: BODY */}
-              <div className="relative px-6 pt-4 space-y-4">
+              <div className="relative px-6 pt-4 space-y-3.5">
                 <div>
-                  <p className="text-[9px] tracking-[0.2em] uppercase mb-0.5 text-cyan-400 font-semibold">
+                  <p className="text-[9px] tracking-[0.2em] uppercase mb-0.5 text-[#B45309] font-bold">
                     Candidate / Student
                   </p>
-                  <p className="text-white font-heading text-lg sm:text-xl tracking-wide font-bold">
+                  <p className="text-[#1C1917] font-heading text-lg sm:text-xl tracking-wide font-extrabold">
                     SOHOM GIRI
                   </p>
-                  <p className="text-[10px] text-white/40 font-mono">STCET · CSE · ID: 2026-CS-8902</p>
+                  <p className="text-[10px] text-[#78716C] font-mono font-medium">STCET · CSE · ID: 2026-CS-8902</p>
                 </div>
 
+                {/* Assigned Bus & Route Boxes */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5">
-                    <p className="text-[9px] tracking-[0.15em] uppercase text-cyan-400 font-semibold mb-0.5">
+                  <div className="p-3 rounded-xl bg-white/90 border border-[#E2DCD2] shadow-2xs">
+                    <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold mb-0.5">
                       Assigned Bus
                     </p>
-                    <p className="text-white text-xs sm:text-sm font-bold flex items-center gap-1.5">
-                      Bus B01 <span className="text-[10px] text-emerald-400 font-mono">LIVE</span>
+                    <p className="text-[#1C1917] text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                      Bus B01 <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold">LIVE</span>
                     </p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5">
-                    <p className="text-[9px] tracking-[0.15em] uppercase text-cyan-400 font-semibold mb-0.5">
+                  <div className="p-3 rounded-xl bg-white/90 border border-[#E2DCD2] shadow-2xs">
+                    <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold mb-0.5">
                       Route
                     </p>
-                    <p className="text-white text-xs sm:text-sm font-bold">
+                    <p className="text-[#1C1917] text-xs sm:text-sm font-extrabold">
                       Route R01
                     </p>
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5">
-                  <p className="text-[9px] tracking-[0.15em] uppercase text-cyan-400 font-semibold mb-0.5">
+                {/* Designated Stop */}
+                <div className="p-3 rounded-xl bg-white/90 border border-[#E2DCD2] shadow-2xs">
+                  <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold mb-0.5">
                     Your Stop · Behala Chowrasta
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/80 font-medium">Scheduled: 08:10 AM</span>
-                    <span className="text-xs font-bold text-emerald-400 font-mono">ETA: 8 min</span>
+                    <span className="text-xs text-[#57534E] font-medium">Scheduled: 08:10 AM</span>
+                    <span className="text-xs font-bold text-[#065F46] font-mono">ETA: 8 min</span>
                   </div>
                 </div>
 
-                {/* ML Delay Readiness */}
+                {/* Punctuality Reliability */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[9px] tracking-[0.15em] uppercase text-cyan-400 font-bold">
+                    <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold">
                       Punctuality Reliability
                     </p>
-                    <p className="text-sm font-bold text-cyan-300 font-mono">87% On-Time</p>
+                    <p className="text-xs font-extrabold text-[#1E40AF] font-mono">87% On-Time</p>
                   </div>
                   <div
-                    className="w-full h-2 rounded-full overflow-hidden"
-                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    className="w-full h-2 rounded-full overflow-hidden bg-black/[0.06] border border-black/[0.04]"
                   >
                     <div
                       className="h-full rounded-full"
                       style={{
                         width: "87%",
-                        background: "linear-gradient(90deg, #00C8FF, #7C3AED, #10B981)",
-                        boxShadow: "0 0 14px rgba(0,200,255,0.7)",
+                        background: "linear-gradient(90deg, #1E40AF, #3B82F6, #D4AF37)",
+                        boxShadow: "0 0 10px rgba(212, 175, 55, 0.5)",
                       }}
                     />
                   </div>
@@ -345,19 +341,14 @@ export default function TransitSmartCard() {
                 {/* Badges / Tech tags */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {[
-                    { name: "RFID ACTIVE", color: "0, 200, 255" },
-                    { name: "ML PREDICT", color: "124, 58, 237" },
-                    { name: "4G GPS", color: "16, 185, 129" },
-                    { name: "AUTOPILOT", color: "245, 158, 11" },
+                    { name: "RFID ACTIVE", bg: "bg-[#EFF6FF]", text: "text-[#1E40AF]", border: "border-[#BFDBFE]" },
+                    { name: "ML PREDICT", bg: "bg-[#FAF5FF]", text: "text-[#6B21A8]", border: "border-[#E9D5FF]" },
+                    { name: "4G GPS", bg: "bg-[#ECFDF5]", text: "text-[#065F46]", border: "border-[#A7F3D0]" },
+                    { name: "AUTOPILOT", bg: "bg-[#FFFBEB]", text: "text-[#92400E]", border: "border-[#FDE68A]" },
                   ].map((t) => (
                     <span
                       key={t.name}
-                      className="px-2.5 py-1 rounded-md text-[9px] font-mono font-bold tracking-wider"
-                      style={{
-                        background: `rgba(${t.color}, 0.12)`,
-                        border: `1px solid rgba(${t.color}, 0.45)`,
-                        color: `rgb(${t.color})`,
-                      }}
+                      className={`px-2.5 py-1 rounded-md text-[9px] font-mono font-bold tracking-wider border ${t.bg} ${t.text} ${t.border}`}
                     >
                       {t.name}
                     </span>
@@ -367,21 +358,20 @@ export default function TransitSmartCard() {
 
               {/* FRONT: FOOTER */}
               <div
-                className="absolute bottom-0 left-0 right-0 px-6 py-3.5"
+                className="absolute bottom-0 left-0 right-0 px-6 py-3.5 bg-white/70 backdrop-blur-xs"
                 style={{
-                  borderTop: "1px solid rgba(0,200,255,0.2)",
-                  background: "rgba(0,200,255,0.04)",
+                  borderTop: "1px solid rgba(212, 175, 55, 0.25)",
                 }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10B981]" />
-                    <span className="text-xs font-bold text-emerald-400 tracking-wider font-mono">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10B981]" />
+                    <span className="text-xs font-bold text-[#065F46] tracking-wider font-mono">
                       VERIFIED PASS
                     </span>
                   </div>
                   <p
-                    className="text-[10px] text-cyan-300 font-mono tracking-wider font-semibold"
+                    className="text-[10px] text-[#B45309] font-mono tracking-wider font-bold"
                     style={{ animation: "clickHint 2s ease-in-out infinite" }}
                   >
                     TAP TO FLIP PASS ↻
@@ -390,21 +380,21 @@ export default function TransitSmartCard() {
               </div>
             </div>
 
-            {/* ════════════════ BACK FACE ════════════════ */}
+            {/* ════════════════ BACK FACE (ROYAL CHAMPAGNE LIGHT) ════════════════ */}
             <div
               className="transit-face"
               style={{
-                background: "linear-gradient(160deg, #130f30 0%, #080d20 40%, #060b18 100%)",
-                border: "2.5px solid rgba(0, 200, 255, 0.8)",
+                background: "linear-gradient(160deg, #FAF8F5 0%, #F5EFE6 45%, #ECE4D3 100%)",
+                border: "2px solid rgba(212, 175, 55, 0.85)",
                 transform: "rotateY(180deg)",
               }}
             >
-              {/* Internal Color Washes */}
+              {/* Internal Pearlescent Washes */}
               <div
                 className="absolute inset-0 rounded-2xl pointer-events-none"
                 style={{
                   background:
-                    "radial-gradient(ellipse at 50% 20%, rgba(124,58,237,0.2) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(0,200,255,0.15) 0%, transparent 50%)",
+                    "radial-gradient(ellipse at 50% 20%, rgba(254,243,199,0.7) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(219,234,254,0.5) 0%, transparent 50%)",
                 }}
               />
 
@@ -412,30 +402,27 @@ export default function TransitSmartCard() {
                 {/* Back Header */}
                 <div className="flex flex-col items-center">
                   <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-sm"
                     style={{
-                      background: "linear-gradient(135deg, rgba(0,200,255,0.2), rgba(124,58,237,0.2))",
-                      border: "1.5px solid rgba(0,200,255,0.5)",
-                      boxShadow: "0 0 30px rgba(0,200,255,0.3)",
+                      background: "linear-gradient(135deg, #FEF3C7, #FDE68A)",
+                      border: "1.5px solid #FCD34D",
                     }}
                   >
-                    <QrCode className="w-8 h-8 text-cyan-300" />
+                    <QrCode className="w-8 h-8 text-[#B45309]" />
                   </div>
                   <h3
-                    className="font-heading text-lg tracking-[0.2em] font-bold text-white"
-                    style={{ textShadow: "0 0 12px rgba(0,200,255,0.5)" }}
+                    className="font-heading text-lg tracking-[0.2em] font-extrabold text-[#1C1917]"
                   >
                     GATE SECURITY PASS
                   </h3>
-                  <p className="text-[9px] text-white/50 tracking-wider font-mono mt-0.5">
+                  <p className="text-[9px] text-[#78716C] tracking-wider font-mono mt-0.5 font-semibold">
                     STCET CAMPUS TRANSIT AUTHORITY
                   </p>
                 </div>
 
-                {/* Digital Barcode SVG */}
-                <div className="w-full max-w-[280px] p-3 rounded-xl bg-black/40 border border-white/10 flex flex-col items-center gap-1.5">
+                {/* Digital Barcode Container */}
+                <div className="w-full max-w-[280px] p-3 rounded-2xl bg-white border border-[#DDD7CB] shadow-xs flex flex-col items-center gap-1.5">
                   <svg className="w-full h-11" viewBox="0 0 240 40">
-                    {/* Simulated barcode stripes */}
                     {[
                       3, 7, 10, 15, 18, 24, 27, 34, 38, 45, 48, 52, 58, 62, 69, 74, 78,
                       84, 88, 95, 99, 105, 110, 116, 122, 126, 133, 137, 144, 149, 155,
@@ -447,34 +434,34 @@ export default function TransitSmartCard() {
                         y="0"
                         width={i % 3 === 0 ? 3 : i % 2 === 0 ? 2 : 1}
                         height="40"
-                        fill="#00C8FF"
+                        fill="#1C1917"
                       />
                     ))}
                   </svg>
-                  <span className="font-mono text-[9px] text-cyan-400 tracking-[0.25em]">
+                  <span className="font-mono text-[9px] text-[#B45309] tracking-[0.25em] font-bold">
                     STCET-8940-1289-9012-X
                   </span>
                 </div>
 
                 {/* Bus & Driver Info */}
                 <div className="w-full max-w-[280px] space-y-2 text-left">
-                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5">
-                    <span className="text-white/50">Bus Reg.</span>
-                    <span className="font-mono font-bold text-white">WB 02 AB 1234</span>
+                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-white border border-[#E2DCD2] shadow-2xs">
+                    <span className="text-[#78716C] font-medium">Bus Reg.</span>
+                    <span className="font-mono font-bold text-[#1C1917]">WB 02 AB 1234</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5">
-                    <span className="text-white/50">Driver</span>
-                    <span className="font-semibold text-white">Rajesh Kumar</span>
+                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-white border border-[#E2DCD2] shadow-2xs">
+                    <span className="text-[#78716C] font-medium">Driver</span>
+                    <span className="font-bold text-[#1C1917]">Rajesh Kumar</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5">
-                    <span className="text-white/50">Transport Desk</span>
-                    <span className="font-mono font-bold text-cyan-400">+91 98300 00000</span>
+                  <div className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-white border border-[#E2DCD2] shadow-2xs">
+                    <span className="text-[#78716C] font-medium">Transport Desk</span>
+                    <span className="font-mono font-bold text-[#1E40AF]">+91 98300 00000</span>
                   </div>
                 </div>
 
                 {/* Back Footer */}
                 <p
-                  className="text-[10px] text-cyan-300 font-mono tracking-wider font-semibold"
+                  className="text-[10px] text-[#B45309] font-mono tracking-wider font-bold"
                   style={{ animation: "clickHint 2s ease-in-out infinite" }}
                 >
                   TAP TO FLIP BACK ↺

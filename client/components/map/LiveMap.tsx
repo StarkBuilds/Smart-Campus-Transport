@@ -68,19 +68,19 @@ const DARK_MAP_STYLE: StyleSpecification = {
   ],
 }
 
-// 1. Traveled path glow — bright Electric Cyan neon bloom
+// 1. Traveled path glow — warm Royal Amber Gold neon bloom
 const traveledGlowLayer: LayerProps = {
   id: "traveled-glow",
   type: "line",
   paint: {
-    "line-color": "#00C8FF",
+    "line-color": "#F59E0B",
     "line-width": 16,
     "line-opacity": 0.35,
     "line-blur": 8,
   },
 }
 
-// 2. Traveled path line — solid, intense Electric Cyan
+// 2. Traveled path line — solid, intense Royal Amber Gold
 const traveledLineLayer: LayerProps = {
   id: "traveled-line",
   type: "line",
@@ -89,7 +89,7 @@ const traveledLineLayer: LayerProps = {
     "line-join": "round",
   },
   paint: {
-    "line-color": "#00C8FF",
+    "line-color": "#D97706",
     "line-width": 4.5,
     "line-opacity": 0.95,
   },
@@ -104,9 +104,9 @@ const remainingLineLayer: LayerProps = {
     "line-join": "round",
   },
   paint: {
-    "line-color": "#818CF8",
+    "line-color": "#CBD5E1",
     "line-width": 2.5,
-    "line-opacity": 0.45,
+    "line-opacity": 0.6,
     "line-dasharray": [4, 3],
   },
 }
@@ -503,7 +503,7 @@ export default function LiveMap({
                       width: 28, height: 28,
                       top: -4, left: -4,
                       background: isNextStop
-                        ? "rgba(0,200,255,0.25)"
+                        ? "rgba(245,158,11,0.3)"
                         : "rgba(124,58,237,0.25)",
                     }}
                   />
@@ -511,12 +511,12 @@ export default function LiveMap({
 
                 {/* Stop dot */}
                 <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-transform duration-200 group-hover:scale-125 ${
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-transform duration-200 group-hover:scale-125 shadow-xs ${
                     isCampus
-                      ? "bg-violet-500 border-violet-300"
+                      ? "bg-violet-600 border-violet-200"
                       : isNextStop
-                      ? "bg-cyan-400 border-white"
-                      : "bg-[#0D1421] border-cyan-400/60"
+                      ? "bg-amber-500 border-white ring-2 ring-amber-300"
+                      : "bg-white border-[#78716C]"
                   }`}
                 />
 
@@ -528,13 +528,13 @@ export default function LiveMap({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 min-w-max rounded-xl border border-cyan-400/20 px-3 py-2"
-                      style={{ background: "rgba(13,20,33,0.95)" }}
+                      className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 min-w-max rounded-xl border border-[#DDD7CB] px-3 py-2 shadow-xl"
+                      style={{ background: "rgba(255,255,255,0.96)" }}
                     >
-                      <p className="text-xs font-semibold text-white">{stop.name}</p>
-                      <p className="text-[10px] text-cyan-400/70">{stop.scheduled_arrival}</p>
+                      <p className="text-xs font-semibold text-[#1C1917]">{stop.name}</p>
+                      <p className="text-[10px] text-[#78716C]">{stop.scheduled_arrival}</p>
                       {isNextStop && (
-                        <p className="text-[10px] text-cyan-400 font-medium">← Next Stop</p>
+                        <p className="text-[10px] text-[#B45309] font-bold">← Next Stop</p>
                       )}
                     </motion.div>
                   )}
@@ -550,15 +550,15 @@ export default function LiveMap({
             <div className="relative flex flex-col items-center justify-center cursor-pointer group">
               {/* Floating identification badge */}
               <div
-                className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-1 border border-cyan-400/40 shadow-xl flex items-center gap-1.5 z-20"
+                className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-1 border border-[#F59E0B]/50 shadow-xl flex items-center gap-1.5 z-20"
                 style={{
-                  background: "rgba(6,11,24,0.95)",
-                  boxShadow: "0 4px 20px rgba(0,200,255,0.4)",
+                  background: "rgba(255,255,255,0.96)",
+                  boxShadow: "0 4px 20px rgba(245,158,11,0.25)",
                 }}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-bold text-white tracking-wide">Bus B01</span>
-                <span className="text-[10px] font-mono text-cyan-400 font-semibold">{busData.speed_kmh.toFixed(0)} km/h</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold text-[#1C1917] tracking-wide">Bus B01</span>
+                <span className="text-[10px] font-mono text-[#B45309] font-bold">{busData.speed_kmh.toFixed(0)} km/h</span>
               </div>
 
               {/* Sonar pulse ring 1 */}
@@ -566,7 +566,7 @@ export default function LiveMap({
                 className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
                   width: 56, height: 56,
-                  background: "rgba(0,200,255,0.25)",
+                  background: "rgba(245,158,11,0.25)",
                   animationDuration: "1.8s",
                 }}
               />
@@ -575,7 +575,7 @@ export default function LiveMap({
                 className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
                   width: 40, height: 40,
-                  background: "rgba(0,200,255,0.35)",
+                  background: "rgba(245,158,11,0.35)",
                   animationDuration: "1.8s",
                   animationDelay: "0.5s",
                 }}
@@ -588,15 +588,15 @@ export default function LiveMap({
                   transform: `rotate(${busData.bearing}deg)`,
                 }}
               >
-                <div className="w-2.5 h-2.5 bg-white rounded-full mx-auto -mt-1 shadow-[0_0_8px_#00C8FF]" />
+                <div className="w-2.5 h-2.5 bg-white rounded-full mx-auto -mt-1 shadow-[0_0_8px_#F59E0B]" />
               </div>
 
               {/* Bus icon circle */}
               <div
-                className="relative w-11 h-11 rounded-full border-2 border-white flex items-center justify-center z-10 transition-transform group-hover:scale-110"
+                className="relative w-11 h-11 rounded-full border-2 border-white flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg"
                 style={{
-                  background: "linear-gradient(135deg, #00C8FF 0%, #0077FF 100%)",
-                  boxShadow: "0 0 25px rgba(0,200,255,0.9), 0 0 50px rgba(0,119,255,0.4)",
+                  background: "linear-gradient(135deg, #F59E0B 0%, #B45309 100%)",
+                  boxShadow: "0 0 25px rgba(245,158,11,0.8), 0 0 45px rgba(180,83,9,0.35)",
                 }}
               >
                 <Bus className="w-6 h-6 text-white drop-shadow-md" />
@@ -609,19 +609,19 @@ export default function LiveMap({
       {/* Top-left: live status badge */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
         <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2 border border-white/10"
-          style={{ background: "rgba(13,20,33,0.9)" }}
+          className="flex items-center gap-2 rounded-xl px-3 py-2 border border-[#DDD7CB] shadow-sm backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
         >
-          <span className={`w-2 h-2 rounded-full ${busData ? "bg-emerald-400 pulse-live" : "bg-red-400"}`} />
-          <span className="text-xs font-medium text-white">{busData ? "LIVE" : "Connecting..."}</span>
+          <span className={`w-2 h-2 rounded-full ${busData ? "bg-emerald-500 pulse-live" : "bg-red-500"}`} />
+          <span className="text-xs font-semibold text-[#1C1917]">{busData ? "LIVE" : "Connecting..."}</span>
         </div>
         {busData && (
           <div
-            className="rounded-xl px-3 py-2 border border-white/10"
-            style={{ background: "rgba(13,20,33,0.9)" }}
+            className="rounded-xl px-3 py-2 border border-[#DDD7CB] shadow-sm backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.95)" }}
           >
-            <p className="text-[10px] text-white/50">Last update</p>
-            <p className="text-xs text-white font-mono">{toIST(busData.timestamp)}</p>
+            <p className="text-[10px] text-[#78716C]">Last update</p>
+            <p className="text-xs text-[#1C1917] font-mono font-medium">{toIST(busData.timestamp)}</p>
           </div>
         )}
       </div>
@@ -629,33 +629,33 @@ export default function LiveMap({
       {/* Center-Top: Floating Route Switcher & Live Traffic Legend */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
         <div
-          className="flex items-center gap-1.5 p-1 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md"
-          style={{ background: "rgba(11,19,43,0.85)" }}
+          className="flex items-center gap-1.5 p-1 rounded-2xl border border-[#DDD7CB] shadow-md backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
         >
           <button
             onClick={() => setVariant("standard")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               currentVariant === "standard"
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 glow-cyan shadow-sm"
-                : "text-muted-foreground hover:text-white"
+                ? "bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] shadow-xs"
+                : "text-[#78716C] hover:text-[#1C1917]"
             }`}
           >
-            <RouteIcon className="w-3.5 h-3.5" />
+            <RouteIcon className="w-3.5 h-3.5 text-[#B45309]" />
             <span className="hidden sm:inline">Primary Route</span>
             <span className="sm:hidden">Primary</span>
           </button>
 
           <button
             onClick={() => setVariant("traffic_alternate")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               currentVariant === "traffic_alternate"
-                ? "bg-purple-500/25 text-purple-300 border border-purple-400/50 shadow-lg shadow-purple-500/10"
-                : "text-muted-foreground hover:text-white"
+                ? "bg-purple-100 text-purple-900 border border-purple-300 shadow-xs"
+                : "text-[#78716C] hover:text-[#1C1917]"
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-purple-400" />
+            <Zap className="w-3.5 h-3.5 text-purple-600" />
             <span>AI Alternate Detour</span>
-            <span className="text-[10px] px-1.5 py-0.5 bg-purple-500/30 text-purple-200 rounded font-mono font-bold">
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-200 text-purple-900 rounded font-mono font-bold">
               Violet &bull; 22 Segments
             </span>
           </button>
@@ -666,20 +666,20 @@ export default function LiveMap({
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 px-3.5 py-1 rounded-full border border-purple-500/30 text-[10px] font-mono shadow-xl backdrop-blur-md"
-            style={{ background: "rgba(10,8,25,0.92)" }}
+            className="flex items-center gap-3 px-3.5 py-1 rounded-full border border-[#DDD7CB] text-[10px] font-mono shadow-md backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.96)" }}
           >
-            <div className="flex items-center gap-1.5 text-purple-300 font-bold border-r border-white/10 pr-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" /> Detour Path
+            <div className="flex items-center gap-1.5 text-purple-800 font-bold border-r border-[#DDD7CB] pr-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" /> Detour Path
             </div>
-            <span className="flex items-center gap-1 text-emerald-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" /> &gt;30 km/h
+            <span className="flex items-center gap-1 text-emerald-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" /> &gt;30 km/h
             </span>
-            <span className="flex items-center gap-1 text-amber-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-amber-400" /> 15-30 km/h
+            <span className="flex items-center gap-1 text-amber-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-amber-500" /> 15-30 km/h
             </span>
-            <span className="flex items-center gap-1 text-red-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-red-400" /> &lt;15 km/h (Choke)
+            <span className="flex items-center gap-1 text-red-600 font-bold">
+              <span className="w-2 h-2 rounded-full bg-red-500" /> &lt;15 km/h (Choke)
             </span>
           </motion.div>
         )}
@@ -690,10 +690,10 @@ export default function LiveMap({
         <Link
           href="/analytics"
           title="Open ML Analytics"
-          className="h-10 px-3 rounded-xl border border-white/10 flex items-center gap-1.5 hover:border-cyan-400/40 transition-all text-xs font-mono text-cyan-400"
-          style={{ background: "rgba(13,20,33,0.9)" }}
+          className="h-10 px-3.5 rounded-xl border border-[#DDD7CB] flex items-center gap-1.5 hover:border-[#B45309]/50 hover:bg-[#FEF3C7] transition-all text-xs font-semibold text-[#1C1917] shadow-sm backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
         >
-          <Layers className="w-3.5 h-3.5" />
+          <Layers className="w-3.5 h-3.5 text-[#B45309]" />
           <span className="hidden sm:inline">Analytics Hub</span>
         </Link>
 
@@ -701,10 +701,10 @@ export default function LiveMap({
           <button
             onClick={centerOnBus}
             title="Center on bus"
-            className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center hover:border-cyan-400/40 transition-all"
-            style={{ background: "rgba(13,20,33,0.9)" }}
+            className="w-10 h-10 rounded-xl border border-[#DDD7CB] flex items-center justify-center hover:border-[#B45309]/50 hover:bg-[#FEF3C7] transition-all shadow-sm backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.95)" }}
           >
-            <Navigation className="w-4 h-4 text-cyan-400" />
+            <Navigation className="w-4 h-4 text-[#B45309]" />
           </button>
         )}
       </div>
@@ -718,39 +718,39 @@ export default function LiveMap({
           className="absolute bottom-4 left-4 right-4 z-10"
         >
           <div
-            className="rounded-2xl border border-white/10 px-5 py-3 flex items-center justify-between gap-4"
-            style={{ background: "rgba(13,20,33,0.92)" }}
+            className="rounded-2xl border border-[#DDD7CB] px-5 py-3 flex items-center justify-between gap-4 shadow-xl backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.96)" }}
           >
             <div className="flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <Clock className="w-4 h-4 text-[#B45309] flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-white/50">ETA to next stop</p>
-                <p className="text-sm font-bold text-cyan-400">{busData.eta_minutes} min</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">ETA to next stop</p>
+                <p className="text-sm font-extrabold text-[#B45309]">{busData.eta_minutes} min</p>
               </div>
             </div>
-            <div className="w-px h-8 bg-white/10" />
+            <div className="w-px h-8 bg-[#E5DFD5]" />
             <div className="flex items-center gap-2.5">
-              <Zap className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <Zap className="w-4 h-4 text-[#D97706] flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-white/50">Speed</p>
-                <p className="text-sm font-bold text-white">{busData.speed_kmh.toFixed(1)} km/h</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">Speed</p>
+                <p className="text-sm font-bold text-[#1C1917] font-mono">{busData.speed_kmh.toFixed(1)} km/h</p>
               </div>
             </div>
-            <div className="w-px h-8 bg-white/10 hidden sm:block" />
+            <div className="w-px h-8 bg-[#E5DFD5] hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2.5">
               <AlertTriangle
                 className={`w-4 h-4 flex-shrink-0 ${
                   busData.delay_minutes > 5
-                    ? "text-red-400"
+                    ? "text-red-500"
                     : busData.delay_minutes > 2
-                    ? "text-amber-400"
-                    : "text-emerald-400"
+                    ? "text-amber-500"
+                    : "text-emerald-600"
                 }`}
               />
               <div>
-                <p className="text-[10px] text-white/50">Schedule</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">Schedule</p>
                 <p className={`text-sm font-bold ${
-                  busData.delay_minutes > 5 ? "text-red-400" : busData.delay_minutes > 2 ? "text-amber-400" : "text-emerald-400"
+                  busData.delay_minutes > 5 ? "text-red-600" : busData.delay_minutes > 2 ? "text-amber-700" : "text-emerald-700"
                 }`}>
                   {busData.delay_minutes <= 2 ? "On Time ✓" : `${busData.delay_minutes} min late`}
                 </p>
@@ -765,10 +765,10 @@ export default function LiveMap({
         {!mapLoaded && (
           <motion.div
             exit={{ opacity: 0, transition: { duration: 0.4 } }}
-            className="absolute inset-0 bg-[#060B18] flex flex-col items-center justify-center z-20 rounded-2xl"
+            className="absolute inset-0 bg-[#FAF8F5] flex flex-col items-center justify-center z-20 rounded-2xl border border-[#DDD7CB]"
           >
-            <div className="w-12 h-12 rounded-full border-2 border-cyan-400/20 border-t-cyan-400 animate-spin mb-4" />
-            <p className="text-sm text-white/40">Loading Kolkata map...</p>
+            <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-600 animate-spin mb-4" />
+            <p className="text-sm text-[#78716C]">Loading Kolkata map...</p>
           </motion.div>
         )}
       </AnimatePresence>
