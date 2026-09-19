@@ -6,9 +6,20 @@ import osmnx as ox
 import math
 import numpy as np
 
+def _is_valid_coords(lat, lon) -> bool:
+    """Range-check GPS coordinates (-90..90, -180..180). Mirrors ETL validation."""
+    if pd.isna(lat) or pd.isna(lon):
+        return False
+    try:
+        lat_f = float(lat)
+        lon_f = float(lon)
+    except (TypeError, ValueError):
+        return False
+    return -90.0 <= lat_f <= 90.0 and -180.0 <= lon_f <= 180.0
+
 def calculate_haversine_km(lat1, lon1, lat2, lon2):
     """Fallback straight-line geographic distance calculation."""
-    if any(pd.isna(x) for x in [lat1, lon1, lat2, lon2]):
+    if not _is_valid_coords(lat1, lon1) or not _is_valid_coords(lat2, lon2):
         return np.nan
 
     r_earth_km = 6371.0
@@ -43,8 +54,8 @@ def enrich_geospatial_features(df: pd.DataFrame, road_graph: nx.DiGraph) -> pd.D
         lat, lon = row.get("latitude"), row.get("longitude")
         stop_lat, stop_lon = row.get("next_stop_latitude"), row.get("next_stop_longitude")
 
-        # Handle missing canonical geography gracefully
-        if any(pd.isna(v) for v in [lat, lon, stop_lat, stop_lon]):
+        # Handle missing / invalid canonical geography gracefully
+        if not _is_valid_coords(lat, lon) or not _is_valid_coords(stop_lat, stop_lon):
             dynamic_road_distances.append(np.nan)
             continue
 

@@ -28,7 +28,8 @@ def test_haversine_distance_m():
 
 def test_route_geometry_schema_and_integrity():
     """Verify generated route_geometry.json complies with schema, GeoJSON standards, and extensibility requirements."""
-    geom_path = "/home/arghadeep/Projects/Smart Campus Transport/ml/data/processed/route_geometry.json"
+    geom_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "route_geometry.json")
+    geom_path = os.path.abspath(geom_path)
     assert os.path.exists(geom_path), "route_geometry.json must exist"
 
     with open(geom_path, "r", encoding="utf-8") as f:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 import networkx as nx
 import osmnx as ox
@@ -9,9 +10,16 @@ from typing import List
 import polars as pl
 from contextlib import asynccontextmanager
 
-from features import run_feature_extraction
-from routing_engine import find_best_routes
-from schemas import BusEvent
+try:
+    from features import run_feature_extraction
+    from routing_engine import find_best_routes
+    from schemas import BusEvent
+except ImportError:  # support `python -m ml.main` / pytest `import ml.main`
+    from ml.features import run_feature_extraction
+    from ml.routing_engine import find_best_routes
+    from ml.schemas import BusEvent
+
+GRAPHML_PATH = Path(__file__).resolve().parent / "kolkata_drive.graphml"
 
 # Initialize Global State as None to protect RAM during imports
 KOLKATA_GRAPH = None
@@ -22,7 +30,7 @@ LIVE_EDGE_SPEEDS = {}
 async def lifespan(app: FastAPI):
     global KOLKATA_GRAPH
     print("Loading Kolkata map into memory...please wait.")
-    raw_graph = ox.load_graphml("kolkata_drive.graphml")
+    raw_graph = ox.load_graphml(GRAPHML_PATH)
     KOLKATA_GRAPH = ox.convert.to_digraph(raw_graph)
 
     print("Pruning narrow para lanes and pedestrian paths for heavy bus routing...")
