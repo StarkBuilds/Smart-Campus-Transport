@@ -1,10 +1,13 @@
 "use client"
 
+// Register page — student and driver onboarding
+// Luxury Royal Beige & Warm Stone Aesthetic
+
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Bus, Eye, EyeOff, GraduationCap, Truck } from "lucide-react"
+import { Bus, Eye, EyeOff, GraduationCap, Truck, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { BUS_STOPS } from "@/lib/constants"
 
@@ -25,7 +28,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     // Simulate registration API call
-    await new Promise((r) => setTimeout(r, 1500))
+    await new Promise((r) => setTimeout(r, 1200))
 
     localStorage.setItem("user_role", role)
     localStorage.setItem("user_email", email)
@@ -42,120 +45,116 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 py-12 relative overflow-hidden">
-      {/* Background */}
-      <div className="orb w-[500px] h-[500px] -top-40 -right-40 bg-violet-600/8 animate-[orb-drift-2_12s_ease-in-out_infinite]" />
-      <div className="orb w-[400px] h-[400px] -bottom-20 -left-20 bg-cyan-500/8 animate-[orb-drift-1_15s_ease-in-out_infinite]" />
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(0,200,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+    <div className="min-h-screen flex items-center justify-center px-5 py-12 relative overflow-hidden bg-gradient-to-b from-[#F6F4EE] via-[#FAF8F5] to-[#F5F2EB] text-[#1C1917]">
+      {/* Warm Ambient Washes */}
+      <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#FEF3C7]/40 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-[450px] h-[450px] rounded-full bg-[#DBEAFE]/40 blur-3xl pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-md my-8"
       >
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center glow-cyan">
+        <div className="flex flex-col items-center justify-center mb-6">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1E40AF] to-[#B45309] flex items-center justify-center shadow-[0_2px_12px_rgba(30,64,175,0.25)] group-hover:scale-105 transition-transform">
               <Bus className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">CampusRide</span>
+            <div className="flex flex-col leading-none">
+              <span className="text-lg font-extrabold text-[#1C1917] tracking-tight">CampusRide</span>
+              <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono mt-0.5">STCET Live Fleet</span>
+            </div>
           </Link>
         </div>
 
-        <div className="glass-strong rounded-2xl border border-white/5 p-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Create your account</h1>
-          <p className="text-sm text-muted-foreground mb-7">Join CampusRide — it&apos;s free for students</p>
+        {/* Elevated Royal Card */}
+        <div className="bg-white rounded-3xl border border-[#DDD7CB] p-8 shadow-[0_16px_45px_rgba(120,113,108,0.08)]">
+          <h1 className="text-2xl font-extrabold text-[#1C1917] mb-1">Create an account</h1>
+          <p className="text-xs text-[#57534E] mb-6">Get real-time arrival alerts and your 3D digital pass</p>
 
           {/* Role selector */}
-          <div className="flex gap-2 p-1 rounded-xl bg-white/5 mb-7">
+          <div className="flex gap-1.5 p-1 rounded-2xl bg-[#EFECE6] border border-[#DDD7CB] mb-6">
             {(["student", "driver"] as Role[]).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRole(r)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                   role === r
-                    ? "bg-cyan-400 text-[#060B18]"
-                    : "text-muted-foreground hover:text-white"
+                    ? "bg-[#1C1917] text-white shadow-xs"
+                    : "text-[#78716C] hover:text-[#1C1917]"
                 }`}
               >
-                {r === "student" ? <GraduationCap className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
-                {r.charAt(0).toUpperCase() + r.slice(1)}
+                {r === "student" ? <GraduationCap className="w-4 h-4 text-amber-400" /> : <Truck className="w-4 h-4 text-blue-400" />}
+                {r === "student" ? "Student" : "Driver"}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</label>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">Full Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder="Sohom Giri"
                 required
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
+                className="px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">
                 {role === "student" ? "College Email" : "Driver ID / Email"}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === "student" ? "you@stcet.ac.in" : "driver@stcet.ac.in"}
+                placeholder={role === "student" ? "sohom.giri@stcet.ac.in" : "driver@stcet.ac.in"}
                 required
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
+                className="px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
               />
             </div>
 
-            {/* Students pick their boarding stop */}
             {role === "student" && (
-              <div className="flex flex-col gap-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider">Your Boarding Stop</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">
+                  Select Your Pickup Stop
+                </label>
                 <select
                   value={stopId}
                   onChange={(e) => setStopId(e.target.value)}
-                  required
-                  className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-400/50 transition-colors appearance-none"
+                  className="px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors cursor-pointer"
                 >
-                  <option value="" className="bg-[#0D1421]">Select your stop</option>
+                  <option value="">Choose a stop along Route R01...</option>
                   {BUS_STOPS.map((stop) => (
-                    <option key={stop.stop_id} value={stop.stop_id} className="bg-[#0D1421]">
-                      {stop.name} · {stop.scheduled_arrival}
+                    <option key={stop.stop_id} value={stop.stop_id}>
+                      {stop.name} (Scheduled: {stop.scheduled_arrival})
                     </option>
                   ))}
                 </select>
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Password</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">Password</label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  minLength={8}
+                  placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 pr-11 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
+                  className="w-full px-4 py-3 pr-11 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#1C1917] transition-colors"
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -165,23 +164,23 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="py-3.5 bg-cyan-400 text-[#060B18] font-semibold rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-2 w-full py-3.5 px-5 rounded-xl bg-[#1C1917] hover:bg-[#292524] text-[#FAF8F5] text-xs font-bold transition-all shadow-[0_4px_14px_rgba(28,25,23,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
             >
-              {loading ? "Creating account..." : `Sign up as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
+              {loading ? (
+                <span>Registering student credential...</span>
+              ) : (
+                <span>Create Student Account</span>
+              )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <div className="mt-6 pt-6 border-t border-[#F2EDE4] text-center text-xs text-[#57534E]">
             Already have an account?{" "}
-            <Link href="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+            <Link href="/login" className="text-[#1E40AF] font-bold hover:underline">
               Sign in
             </Link>
-          </p>
+          </div>
         </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-5">
-          <Link href="/" className="hover:text-white transition-colors">← Back to home</Link>
-        </p>
       </motion.div>
     </div>
   )

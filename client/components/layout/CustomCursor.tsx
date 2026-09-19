@@ -1,8 +1,11 @@
 "use client"
 
-// Custom liquid cursor — same physics as the PrepPass cursor
-// A blob that lazily follows the mouse, plus a small sharp dot that snaps exactly to cursor position
-// The blob uses spring physics via a lerp (linear interpolation) for the trailing effect
+// Custom liquid cursor — physics-driven interactive cursor
+// Refined to look crisp and luminous across both light landing page and dark consoles
+// Features:
+// 1. Spring physics lerp follow blob
+// 2. High-precision pinpoint dot with ambient glow
+// 3. Hidden on full-screen dashboard map interactions
 
 import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
@@ -32,8 +35,7 @@ export default function CustomCursor() {
     let animFrame: number
 
     const animate = () => {
-      // Lerp factor — lower = slower/lazier follow, higher = snappier
-      const lerpFactor = 0.12
+      const lerpFactor = 0.14
 
       blob.current.x += (mouse.current.x - blob.current.x) * lerpFactor
       blob.current.y += (mouse.current.y - blob.current.y) * lerpFactor
@@ -60,22 +62,22 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* The big glowing blob that trails behind */}
+      {/* Sleek ambient follower blob — warm amber/gold */}
       <div
         ref={blobRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9999] w-8 h-8 rounded-full mix-blend-screen"
+        className="pointer-events-none fixed top-0 left-0 z-[9999] w-8 h-8 rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(0,200,255,0.6) 0%, rgba(124,58,237,0.3) 60%, transparent 100%)",
-          filter: "blur(6px)",
+          background: "radial-gradient(circle, rgba(217,119,6,0.22) 0%, rgba(245,158,11,0.08) 60%, transparent 100%)",
+          filter: "blur(4px)",
           willChange: "transform",
         }}
       />
-      {/* The sharp dot that snaps precisely to mouse */}
+      {/* Sharp pinpoint dot — royal amber */}
       <div
         ref={dotRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9999] w-2 h-2 rounded-full bg-cyan-400"
+        className="pointer-events-none fixed top-0 left-0 z-[9999] w-2 h-2 rounded-full bg-[#D97706]"
         style={{
-          boxShadow: "0 0 8px rgba(0,200,255,0.9)",
+          boxShadow: "0 0 8px rgba(217,119,6,0.6)",
           willChange: "transform",
         }}
       />

@@ -39,15 +39,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Custom liquid cursor — shows on all pages */}
         <CustomCursor />
 
-        {/* Toast notifications — used for delay alerts and arrival warnings */}
+        {/* Toast notifications — styled for luxury light theme */}
         <Toaster
           position="top-right"
-          theme="dark"
+          theme="light"
           toastOptions={{
             style: {
-              background: "oklch(0.11 0.018 240)",
-              border: "1px solid oklch(0.25 0.02 240 / 60%)",
-              color: "oklch(0.94 0.01 240)",
+              background: "#FFFFFF",
+              border: "1px solid #DDD7CB",
+              color: "#1C1917",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
             },
           }}
         />
