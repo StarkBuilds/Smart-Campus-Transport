@@ -1,16 +1,84 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { motion, useInView } from "framer-motion"
 import { GraduationCap, Users, Award } from "lucide-react"
 import { CAMPUS } from "@/lib/constants"
 
-const STATS = [
-  { value: "2,400+", label: "Students Served" },
-  { value: "8", label: "Bus Routes" },
-  { value: "99.2%", label: "Uptime" },
-  { value: "< 30s", label: "GPS Update Rate" },
+interface StatConfig {
+  target: number
+  label: string
+  prefix?: string
+  suffix?: string
+  decimals?: number
+}
+
+const STATS_CONFIG: StatConfig[] = [
+  { target: 2400, suffix: "+", label: "Students Served", decimals: 0 },
+  { target: 8, label: "Bus Routes", decimals: 0 },
+  { target: 99.2, suffix: "%", label: "Uptime", decimals: 1 },
+  { target: 30, prefix: "< ", suffix: "s", label: "GPS Update Rate", decimals: 0 },
 ]
+
+function DynamicStatCounter({
+  target,
+  prefix = "",
+  suffix = "",
+  decimals = 0,
+  isInView,
+}: {
+  target: number
+  prefix?: string
+  suffix?: string
+  decimals?: number
+  isInView: boolean
+}) {
+  const [displayValue, setDisplayValue] = useState<string>(
+    decimals > 0 ? (0).toFixed(decimals) : "0"
+  )
+
+  useEffect(() => {
+    if (!isInView) return
+
+    let startTime: number | null = null
+    const duration = 1800 // 1.8 seconds smooth roll-up
+    let animationFrameId: number
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp
+      const progress = Math.min((timestamp - startTime) / duration, 1)
+      // Ease out cubic: fast start, soft deceleration
+      const easeProgress = 1 - Math.pow(1 - progress, 3)
+      const currentVal = easeProgress * target
+
+      const formatted =
+        decimals > 0
+          ? currentVal.toFixed(decimals)
+          : Math.floor(currentVal).toLocaleString()
+
+      setDisplayValue(formatted)
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step)
+      } else {
+        const finalFormatted =
+          decimals > 0 ? target.toFixed(decimals) : target.toLocaleString()
+        setDisplayValue(finalFormatted)
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [isInView, target, decimals])
+
+  return (
+    <span>
+      {prefix}
+      {displayValue}
+      {suffix}
+    </span>
+  )
+}
 
 export default function About() {
   const ref = useRef<HTMLElement>(null)
@@ -84,16 +152,24 @@ export default function About() {
 
         {/* Right — stats grid */}
         <div className="grid grid-cols-2 gap-4">
-          {STATS.map((stat, i) => (
+          {STATS_CONFIG.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={isInView ? { opacity: 1, scale: 1 } : {}}
               transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
-              className="glass-strong rounded-2xl border border-cyan-400/15 p-8 flex flex-col gap-2"
+              className="glass-strong rounded-2xl border border-cyan-400/15 p-8 flex flex-col gap-2 relative overflow-hidden group hover:border-cyan-400/30 transition-all"
             >
-              <span className="text-4xl font-bold text-gradient-cyan">{stat.value}</span>
-              <span className="text-sm text-muted-foreground">{stat.label}</span>
+              <div className="text-4xl font-bold text-gradient-cyan">
+                <DynamicStatCounter
+                  target={stat.target}
+                  prefix={stat.prefix}
+                  suffix={stat.suffix}
+                  decimals={stat.decimals}
+                  isInView={isInView}
+                />
+              </div>
+              <span className="text-sm text-muted-foreground font-medium">{stat.label}</span>
             </motion.div>
           ))}
         </div>

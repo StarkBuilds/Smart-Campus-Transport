@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 const NAV_LINKS = [
   { label: "Fleet Intelligence", href: "#features" },
   { label: "Route Pipeline", href: "#how-it-works" },
+  { label: "ML Analytics", href: "/analytics" },
   { label: "Campus Context", href: "#about" },
   { label: "Live Radar", href: "/dashboard" },
   { label: "Driver Console", href: "/driver" },
@@ -31,8 +32,8 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  // Don't show landing nav inside the dashboard
-  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/driver")) return null
+  // Don't show landing nav inside the dashboard, driver console, or analytics hub
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/driver") || pathname?.startsWith("/analytics")) return null
 
   return (
     <>

@@ -10,6 +10,7 @@ const FOOTER_LINKS = {
     { label: "Route Pipeline", href: "#how-it-works" },
     { label: "Live Radar Map", href: "/dashboard" },
     { label: "Driver Console", href: "/driver" },
+    { label: "Fleet ML Analytics", href: "/analytics" },
   ],
   Campus: [
     { label: "STCET Context", href: "#about" },
@@ -20,7 +21,7 @@ const FOOTER_LINKS = {
   Architecture: [
     { label: "MapLibre GIS Engine", href: "#features" },
     { label: "WebSocket Pipeline", href: "#how-it-works" },
-    { label: "ML Delay Estimator", href: "#about" },
+    { label: "C++ FFI Delay Estimator", href: "/analytics" },
     { label: "Digital Pass Verification", href: "/" },
   ],
 }

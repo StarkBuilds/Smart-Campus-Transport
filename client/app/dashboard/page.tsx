@@ -6,11 +6,12 @@
 // Notifications fire when bus is approaching
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   Bus, MapPin, Clock, Brain, LogOut,
-  TrendingUp, AlertTriangle, CheckCircle2, Wifi, WifiOff,
+  TrendingUp, AlertTriangle, CheckCircle2, Wifi, WifiOff, Layers,
 } from "lucide-react"
 import { toast } from "sonner"
 import MapWrapper from "@/components/map/MapWrapper"
@@ -110,6 +111,14 @@ export default function StudentDashboard() {
           </div>
 
           <span className="text-sm text-muted-foreground">Hi, {userName}</span>
+
+          <Link
+            href="/analytics"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 bg-cyan-500/5 transition-all"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden sm:block">Analytics Hub</span>
+          </Link>
 
           <button
             onClick={handleLogout}

@@ -6,11 +6,13 @@
 // The map shows student home pickup points, not just campus stops
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   Bus, Route, Clock, AlertTriangle, LogOut,
   CheckCircle2, Users, Wifi, WifiOff, TrendingDown,
+  Zap, Layers,
 } from "lucide-react"
 import { toast } from "sonner"
 import MapWrapper from "@/components/map/MapWrapper"
@@ -33,6 +35,7 @@ export default function DriverDashboard() {
   const { busData, isConnected } = useBusSocket()
   const [driverName, setDriverName] = useState("Driver")
   const [trafficWarning, setTrafficWarning] = useState(false)
+  const [driverRouteVariant, setDriverRouteVariant] = useState<"standard" | "traffic_alternate">("standard")
 
   useEffect(() => {
     const name = localStorage.getItem("user_name")
@@ -84,6 +87,13 @@ export default function DriverDashboard() {
             : <WifiOff className="w-3.5 h-3.5 text-red-400" />
           }
           <span className="text-sm text-muted-foreground">Hi, {driverName}</span>
+          <Link
+            href="/analytics"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-cyan-400 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 bg-cyan-500/5 transition-all"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden sm:block">Analytics Hub</span>
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-white border border-white/5 hover:border-white/10 transition-all"
@@ -148,6 +158,23 @@ export default function DriverDashboard() {
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Suggested alternate</p>
                 <p className="text-xs text-emerald-400 font-medium">Via Taratala Road → saves ~8 min</p>
               </div>
+              <button
+                onClick={() =>
+                  setDriverRouteVariant(
+                    driverRouteVariant === "standard" ? "traffic_alternate" : "standard"
+                  )
+                }
+                className={`mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                  driverRouteVariant === "traffic_alternate"
+                    ? "bg-purple-500/30 text-purple-200 border border-purple-400/50 shadow-purple-500/20"
+                    : "bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-purple-400" />
+                {driverRouteVariant === "traffic_alternate"
+                  ? "✓ AI Detour Active (Revert to Primary)"
+                  : "Engage AI Detour (Violet ~8 min saved)"}
+              </button>
             </motion.div>
           )}
 
@@ -213,7 +240,12 @@ export default function DriverDashboard() {
 
         {/* Map */}
         <main className="flex-1 p-4">
-          <MapWrapper busData={busData} userRole="driver" />
+          <MapWrapper
+            busData={busData}
+            userRole="driver"
+            activeRouteVariant={driverRouteVariant}
+            onToggleRouteVariant={setDriverRouteVariant}
+          />
         </main>
       </div>
     </div>
