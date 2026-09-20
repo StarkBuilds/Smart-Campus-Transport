@@ -23,6 +23,7 @@ import java.util.List;
 public class BusController {
 
     private final BusService busService;
+    private final com.semicolons.smartcampustransport.service.MlPredictionService mlPredictionService;
 
     /**
      * Get all buses with latest location.
@@ -58,6 +59,20 @@ public class BusController {
     @GetMapping("/buses/{id}/location")
     public ResponseEntity<BusResponse.BusLocation> getBusLocation(@PathVariable("id") String busId) {
         return busService.getBusLocation(busId)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Get ML delay prediction for a bus.
+     *
+     * @param busId the bus ID
+     * @return PredictionResponse or 404 if bus not found
+     */
+    @GetMapping("/buses/{id}/prediction")
+    public ResponseEntity<com.semicolons.smartcampustransport.dto.PredictionResponse> getPrediction(
+            @PathVariable("id") String busId) {
+        return mlPredictionService.getPredictionForBus(busId)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
