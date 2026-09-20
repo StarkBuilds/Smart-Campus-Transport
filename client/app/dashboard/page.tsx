@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import MapWrapper from "@/components/map/MapWrapper"
+import RouteInspector from "@/components/landing/RouteInspector"
 import TiltCard from "@/components/common/TiltCard"
 import TransitSmartCard from "@/components/landing/TransitSmartCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
@@ -121,23 +122,42 @@ export default function StudentDashboard() {
             </span>
           </div>
 
-          {/* 3D Student Pass trigger button */}
+          {/* SOHOM GIRI Digital Credential & 3D Student Pass Pill */}
           <button
             type="button"
             onClick={() => setShowPassModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#92400E] bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#FCD34D] transition-all shadow-xs"
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-gradient-to-r from-[#FFFBEB] via-[#FEF3C7] to-[#FDE68A] hover:from-[#FEF3C7] hover:to-[#FCD34D] border border-[#F59E0B]/40 hover:border-[#F59E0B] transition-all shadow-xs group text-left cursor-pointer active:scale-95"
+            title="Inspect 3D Student Smart Pass"
           >
-            <CreditCard className="w-3.5 h-3.5 text-[#B45309]" />
-            <span className="hidden sm:inline">3D Student Pass (Sohom Giri)</span>
-            <span className="sm:hidden">Pass</span>
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#B45309] to-[#D97706] text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <CreditCard className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono uppercase text-[#92400E] font-bold tracking-wider hidden md:inline">
+                  Digital Credential
+                </span>
+                <span className="text-xs font-extrabold text-[#1C1917] tracking-tight">
+                  {userName}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              </div>
+              <div className="flex items-center gap-1 text-[10px] font-mono text-[#78716C]">
+                <span className="hidden lg:inline">STCET · CSE · ID: 2026-CS-8902 ·</span>
+                <span className="text-[#B45309] font-bold group-hover:underline">
+                  3D Pass ➔
+                </span>
+              </div>
+            </div>
           </button>
 
           <Link
             href="/analytics"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#1C1917] bg-white hover:bg-[#F6F4EE] border border-[#DDD7CB] transition-all shadow-xs"
+            title="Institutional Transit Analytics (Admin Role Required)"
           >
             <Layers className="w-3.5 h-3.5 text-[#B45309]" />
-            <span className="hidden sm:block">Analytics Hub</span>
+            <span className="hidden sm:block">Admin Analytics</span>
           </Link>
 
           <button
@@ -151,31 +171,9 @@ export default function StudentDashboard() {
       </header>
 
       {/* Main content — side panel + map */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left panel — status cards with clean custom scrollbar & zero flex shrinking */}
-        <aside className="w-80 flex-shrink-0 flex flex-col gap-3 p-4 border-r border-[#DDD7CB] bg-[#FAF8F5] overflow-y-auto custom-scrollbar">
-
-          {/* SOHOM GIRI Student Identity Pass Banner (Royal Champagne Gold) */}
-          <div
-            onClick={() => setShowPassModal(true)}
-            className="shrink-0 cursor-pointer group p-3.5 rounded-2xl bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/40 hover:border-[#F59E0B] transition-all shadow-[0_4px_16px_rgba(245,158,11,0.12)]"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono uppercase text-[#92400E] font-bold tracking-wider">
-                Digital Credential
-              </span>
-              <span className="text-[10px] text-[#B45309] font-bold group-hover:translate-x-0.5 transition-transform">
-                Inspect 3D Pass ➔
-              </span>
-            </div>
-            <p className="text-sm font-extrabold text-[#1C1917] tracking-wide">
-              SOHOM GIRI
-            </p>
-            <div className="flex items-center justify-between mt-1 text-[10px] font-mono text-[#78716C]">
-              <span>STCET · CSE · ID: 2026-CS-8902</span>
-              <span className="text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-bold border border-emerald-200">● ACTIVE</span>
-            </div>
-          </div>
+        <aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-3 p-4 border-b md:border-b-0 md:border-r border-[#DDD7CB] bg-[#FAF8F5] max-h-[38vh] md:max-h-none overflow-y-auto custom-scrollbar">
 
           {/* Your stop info */}
           {userStop && (
@@ -312,10 +310,16 @@ export default function StudentDashboard() {
           </div>
         </aside>
 
-        {/* Map — takes all remaining space */}
-        <main className="flex-1 p-4 relative bg-[#F6F4EE]">
-          <div className="w-full h-full rounded-2xl overflow-hidden shadow-md border border-[#DDD7CB] relative">
+        {/* Main tracking canvas & corridor inspector panel */}
+        <main className="flex-1 p-4 flex flex-col gap-6 relative bg-[#F6F4EE] overflow-y-auto custom-scrollbar">
+          {/* Live Map Viewport */}
+          <div className="w-full min-h-[360px] sm:min-h-[460px] h-[50vh] sm:h-[58vh] rounded-2xl overflow-hidden shadow-md border border-[#DDD7CB] relative shrink-0">
             <MapWrapper busData={busData} userRole="student" />
+          </div>
+
+          {/* Interactive Route R01 Corridor & Stop Inspector */}
+          <div id="corridor-inspector" className="w-full pb-10">
+            <RouteInspector isEmbedded={true} />
           </div>
         </main>
       </div>

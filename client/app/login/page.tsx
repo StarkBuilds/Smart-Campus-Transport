@@ -8,10 +8,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Bus, Eye, EyeOff, GraduationCap, Truck, ArrowLeft } from "lucide-react"
+import { Bus, Eye, EyeOff, GraduationCap, Truck, ShieldCheck, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 
-type Role = "student" | "driver"
+type Role = "student" | "driver" | "admin"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -34,9 +34,11 @@ export default function LoginPage() {
 
     toast.success(`Welcome back! Logging you in as ${role}...`)
 
-    // Drivers go to driver dashboard, students to regular dashboard
+    // Drivers go to driver dashboard, admins to analytics, students to student dashboard
     if (role === "driver") {
       router.push("/driver")
+    } else if (role === "admin") {
+      router.push("/analytics")
     } else {
       router.push("/dashboard")
     }
@@ -74,19 +76,21 @@ export default function LoginPage() {
 
           {/* Role selector tabs */}
           <div className="flex gap-1.5 p-1 rounded-2xl bg-[#EFECE6] border border-[#DDD7CB] mb-6">
-            {(["student", "driver"] as Role[]).map((r) => (
+            {(["student", "driver", "admin"] as Role[]).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRole(r)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                   role === r
                     ? "bg-[#1C1917] text-white shadow-xs"
                     : "text-[#78716C] hover:text-[#1C1917]"
                 }`}
               >
-                {r === "student" ? <GraduationCap className="w-4 h-4 text-amber-400" /> : <Truck className="w-4 h-4 text-blue-400" />}
-                {r === "student" ? "Student Portal" : "Driver Terminal"}
+                {r === "student" && <GraduationCap className="w-4 h-4 text-amber-400" />}
+                {r === "driver" && <Truck className="w-4 h-4 text-blue-400" />}
+                {r === "admin" && <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                {r === "student" ? "Student" : r === "driver" ? "Driver" : "Admin"}
               </button>
             ))}
           </div>
@@ -94,13 +98,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">
-                {role === "student" ? "College Email" : "Driver ID / Email"}
+                {role === "student" ? "College Email" : role === "driver" ? "Driver ID / Email" : "Admin Coordinator Email"}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === "student" ? "you@stcet.ac.in" : "driver@stcet.ac.in"}
+                placeholder={role === "student" ? "you@stcet.ac.in" : role === "driver" ? "driver@stcet.ac.in" : "admin@stcet.ac.in"}
                 required
                 className="px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
               />

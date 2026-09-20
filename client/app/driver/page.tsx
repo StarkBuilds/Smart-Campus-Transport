@@ -95,9 +95,10 @@ export default function DriverDashboard() {
           <Link
             href="/analytics"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#1C1917] bg-white hover:bg-[#F6F4EE] border border-[#DDD7CB] transition-all shadow-xs"
+            title="Institutional Transit Analytics (Admin Role Required)"
           >
             <Layers className="w-3.5 h-3.5 text-[#B45309]" />
-            <span className="hidden sm:block">Analytics Hub</span>
+            <span className="hidden sm:block">Admin Analytics</span>
           </Link>
           <button
             onClick={handleLogout}
@@ -109,9 +110,9 @@ export default function DriverDashboard() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left panel */}
-        <aside className="w-72 flex-shrink-0 flex flex-col gap-3 p-4 border-r border-[#DDD7CB] bg-[#FAF8F5] overflow-y-auto custom-scrollbar">
+        <aside className="w-full md:w-72 flex-shrink-0 flex flex-col gap-3 p-4 border-b md:border-b-0 md:border-r border-[#DDD7CB] bg-[#FAF8F5] max-h-[36vh] md:max-h-none overflow-y-auto custom-scrollbar">
 
           {/* Trip summary */}
           <TiltCard intensity={6} className="bg-white rounded-xl border border-[#DDD7CB] p-4 shadow-xs">

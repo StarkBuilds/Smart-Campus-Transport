@@ -127,13 +127,24 @@ const STOPS: CorridorStop[] = [
   },
 ]
 
-export default function RouteInspector() {
+interface RouteInspectorProps {
+  isEmbedded?: boolean
+}
+
+export default function RouteInspector({ isEmbedded = false }: RouteInspectorProps) {
   const [selectedStopId, setSelectedStopId] = useState<string>("stop-2")
   const currentStop = STOPS.find((s) => s.id === selectedStopId) || STOPS[1]
 
   return (
-    <section id="corridor-inspector" className="relative py-24 px-5 bg-gradient-to-b from-[#F5F2EB] to-[#EFECE6] border-t border-[#DDD7CB]">
-      <div className="max-w-7xl mx-auto">
+    <section
+      id="corridor-inspector"
+      className={
+        isEmbedded
+          ? "relative rounded-3xl p-6 sm:p-8 bg-[#FAF8F5] border border-[#DDD7CB] shadow-sm"
+          : "relative py-24 px-5 bg-gradient-to-b from-[#F5F2EB] to-[#EFECE6] border-t border-[#DDD7CB]"
+      }
+    >
+      <div className={isEmbedded ? "w-full" : "max-w-7xl mx-auto"}>
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>

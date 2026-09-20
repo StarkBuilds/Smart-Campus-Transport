@@ -11,13 +11,11 @@ import { Menu, X, Bus, Navigation, Layers, ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
-  { label: "Corridor Inspector", href: "#corridor-inspector" },
-  { label: "Fleet Intelligence", href: "#features" },
-  { label: "Transit Pipeline", href: "#how-it-works" },
+  { label: "Live Map", href: "/dashboard" },
+  { label: "Routes & Stops", href: "/dashboard#corridor-inspector" },
+  { label: "How It Works", href: "#how-it-works" },
   { label: "Campus Context", href: "#about" },
-  { label: "Analytics Hub", href: "/analytics" },
-  { label: "Driver Console", href: "/driver" },
-  { label: "Dispatch Desk", href: "#contact" },
+  { label: "Dispatch Desk", href: "#dispatch-desk" },
 ]
 
 export default function Navbar() {

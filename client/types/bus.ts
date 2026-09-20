@@ -4,7 +4,7 @@
 
 export type BusStatus = "IN_SERVICE" | "OUT_OF_SERVICE" | "DELAYED" | "APPROACHING" | "AT_STOP"
 
-export type UserRole = "student" | "driver"
+export type UserRole = "student" | "driver" | "admin"
 
 // Main GPS event — this is what the backend sends via WebSocket
 export interface BusEvent {

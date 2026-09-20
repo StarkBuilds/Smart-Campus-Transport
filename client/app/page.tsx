@@ -9,12 +9,9 @@
 import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
 import Hero from "@/components/landing/Hero"
-import FleetTicker from "@/components/landing/FleetTicker"
-import RouteInspector from "@/components/landing/RouteInspector"
 import Features from "@/components/landing/Features"
 import HowItWorks from "@/components/landing/HowItWorks"
 import About from "@/components/landing/About"
-import Contact from "@/components/landing/Contact"
 
 export default function LandingPage() {
   return (
@@ -22,12 +19,9 @@ export default function LandingPage() {
       <Navbar />
       <main className="flex flex-col">
         <Hero />
-        <FleetTicker />
-        <RouteInspector />
         <Features />
         <HowItWorks />
         <About />
-        <Contact />
       </main>
       <Footer />
     </div>

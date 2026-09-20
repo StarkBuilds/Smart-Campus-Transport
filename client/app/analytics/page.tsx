@@ -42,7 +42,12 @@ import {
   Zap,
   Gauge,
   Compass,
+  ShieldAlert,
+  ShieldCheck,
+  Lock,
+  Key,
 } from "lucide-react"
+import { toast } from "sonner"
 import {
   HOURLY_TELEMETRY_DATA,
   STOP_ARRIVAL_VARIANCES,
@@ -52,6 +57,11 @@ import {
 } from "@/lib/analytics-data"
 
 export default function AnalyticsPage() {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [passcode, setPasscode] = useState("")
+  const [authError, setAuthError] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+
   const [selectedRoute, setSelectedRoute] = useState<string>("ALL")
   const [activeTab, setActiveTab] = useState<"confidence" | "variance" | "rush" | "physics">("confidence")
   const [timeFilter, setTimeFilter] = useState<"ALL" | "MORNING" | "EVENING">("ALL")
@@ -63,8 +73,16 @@ export default function AnalyticsPage() {
   const countSpeedRef = useRef<HTMLSpanElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // GSAP Entry and Number Counter Animations
+  // Verify Admin Role from localStorage
   useEffect(() => {
+    const role = localStorage.getItem("user_role")
+    setIsAdmin(role === "admin")
+  }, [])
+
+  // GSAP Entry and Number Counter Animations (only when admin is verified)
+  useEffect(() => {
+    if (!isAdmin) return
+
     const ctx = gsap.context(() => {
       // Numbers ticker
       const pingsObj = { val: 0 }
@@ -126,7 +144,7 @@ export default function AnalyticsPage() {
     }, containerRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [isAdmin])
 
   // Filtered Hourly Data based on Time filter
   const filteredHourlyData = HOURLY_TELEMETRY_DATA.filter((point) => {
@@ -150,6 +168,143 @@ export default function AnalyticsPage() {
           reliability: `${FLEET_ROUTES_DATA.find((r) => r.route_id === selectedRoute)?.on_time_reliability_pct}%`,
           active_count: FLEET_ROUTES_DATA.find((r) => r.route_id === selectedRoute)?.bus_count || 1,
         }
+
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-600 animate-spin mb-3" />
+        <p className="text-xs font-mono text-[#78716C]">Verifying Administrator Clearance...</p>
+      </div>
+    )
+  }
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#F6F4EE] via-[#FAF8F5] to-[#F5F2EB] flex items-center justify-center p-5 text-[#1C1917]">
+        {/* Warm Ambient Washes */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="absolute -top-40 left-1/4 w-[500px] h-[500px] bg-[#FEF3C7]/40 rounded-full blur-[120px]" />
+          <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-[#DBEAFE]/40 rounded-full blur-[140px]" />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 max-w-md w-full rounded-3xl bg-white border border-[#DDD7CB] p-8 shadow-2xl overflow-hidden"
+        >
+          {/* Top accent border */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#B45309] via-[#D97706] to-[#1E40AF]" />
+
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mb-4">
+            <ShieldAlert className="w-6 h-6 text-[#B45309]" />
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-[10px] font-mono font-bold mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+            ADMINISTRATOR ACCESS ONLY
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-[#1C1917] tracking-tight">
+            Transit Intelligence Hub
+          </h1>
+
+          <p className="text-xs text-[#78716C] mt-2 leading-relaxed">
+            Access to high-frequency Polars C++ telemetry logs, XGBoost latency models, and South Kolkata corridor diagnostics is strictly restricted to STCET Transport Operators &amp; Campus Administrators.
+          </p>
+
+          {/* Quick Admin Passcode Auth Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setAuthLoading(true)
+              setTimeout(() => {
+                const normalized = passcode.toLowerCase().trim()
+                if (
+                  normalized === "admin" ||
+                  normalized === "stcet" ||
+                  normalized === "stcet2026" ||
+                  normalized === "admin123" ||
+                  normalized === "sohom"
+                ) {
+                  localStorage.setItem("user_role", "admin")
+                  setIsAdmin(true)
+                  setAuthError(false)
+                  toast.success("Administrator clearance verified. Welcome to Transit Hub.")
+                } else {
+                  setAuthError(true)
+                  toast.error("Invalid administrator security key.")
+                }
+                setAuthLoading(false)
+              }, 350)
+            }}
+            className="mt-6 flex flex-col gap-3"
+          >
+            <div>
+              <label className="text-[11px] font-bold text-[#44403C] uppercase tracking-wider block mb-1">
+                Admin Security Key
+              </label>
+              <input
+                type="password"
+                value={passcode}
+                onChange={(e) => {
+                  setPasscode(e.target.value)
+                  setAuthError(false)
+                }}
+                placeholder="Enter security key (e.g. stcet2026)"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#D6CEBF] bg-[#FAF8F5] text-xs focus:outline-none focus:bg-white focus:border-[#B45309] font-mono text-[#1C1917] transition-colors"
+              />
+              {authError && (
+                <p className="text-[10px] text-red-600 font-semibold mt-1">
+                  Security key not recognized. Use &quot;stcet2026&quot; or quick demo button below.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full py-2.5 rounded-xl bg-[#1C1917] hover:bg-[#B45309] text-white font-bold text-xs transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>{authLoading ? "Verifying clearance..." : "Unlock Administrator Terminal"}</span>
+            </button>
+          </form>
+
+          {/* Quick One-Click Demo Admin Authorize button */}
+          <div className="mt-4 pt-4 border-t border-[#E5DFD5] flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("user_role", "admin")
+                localStorage.setItem("user_name", "Dr. S. K. Roy (Transport Head)")
+                setIsAdmin(true)
+                toast.success("Authorized as STCET Transport Coordinator.")
+              }}
+              className="w-full py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-[#92400E] font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>One-Click Authorize as Admin (Evaluator Mode)</span>
+            </button>
+
+            <div className="flex items-center justify-between gap-2 mt-2">
+              <Link
+                href="/dashboard"
+                className="flex-1 text-center py-2 rounded-xl bg-white hover:bg-[#F6F4EE] border border-[#DDD7CB] text-[#57534E] text-xs font-semibold transition-colors"
+              >
+                ← Student Dashboard
+              </Link>
+              <Link
+                href="/login"
+                className="flex-1 text-center py-2 rounded-xl bg-white hover:bg-[#F6F4EE] border border-[#DDD7CB] text-[#57534E] text-xs font-semibold transition-colors"
+              >
+                Admin Sign In →
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-[#F6F4EE] via-[#FAF8F5] to-[#F5F2EB] text-[#1C1917] flex flex-col font-sans selection:bg-[#FEF3C7] selection:text-[#92400E]">
@@ -196,6 +351,24 @@ export default function AnalyticsPage() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Polars Physics Engine: 24,375 Events Synced
           </div>
+
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-100 border border-purple-300 text-purple-900 text-xs font-mono font-bold">
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
+            <span>Admin Clearance Verified</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem("user_role", "student")
+              setIsAdmin(false)
+              toast.info("Locked Administrator terminal.")
+            }}
+            className="text-xs px-3 py-2 rounded-xl bg-white hover:bg-red-50 text-[#78716C] hover:text-red-700 border border-[#DDD7CB] hover:border-red-200 transition-all font-semibold shadow-2xs cursor-pointer"
+            title="Lock terminal and revoke admin view"
+          >
+            Lock Terminal
+          </button>
 
           <Link
             href="/driver"

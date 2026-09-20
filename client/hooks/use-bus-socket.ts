@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import type { LiveBusData } from "@/types/bus"
-import { getMockBusEvent } from "@/lib/mock-data"
+import { getInterpolatedBusEvent } from "@/lib/mock-data"
 
 interface UseBusSocketResult {
   busData: LiveBusData | null
@@ -46,7 +46,7 @@ export function useBusSocket(): UseBusSocketResult {
 
         ws.onerror = () => {
           console.warn("WebSocket error — falling back to mock data")
-          startMockFeed()
+          return startMockFeed()
         }
 
         ws.onclose = () => {
@@ -56,28 +56,39 @@ export function useBusSocket(): UseBusSocketResult {
         return () => ws.close()
       } catch {
         // If WebSocket fails to connect, fall through to mock
-        startMockFeed()
+        return startMockFeed()
       }
     } else {
-      // ─── MOCK DATA (no backend yet) ───────────────────────────────
-      startMockFeed()
+      // ─── MOCK DATA (continuous smooth simulation matching Homepage) ──
+      return startMockFeed()
     }
 
     function startMockFeed() {
-      setIsConnected(true)  // mock counts as "connected" for UI purposes
+      setIsConnected(true)
 
-      // Send the first event immediately so the map isn't blank
-      setBusData(getMockBusEvent(0, 3))
+      const cycleDuration = 72000 // 72-second graceful cruising loop matching realistic city pace
+      let animId: number
+      let lastTime = 0
 
-      // Update every 3 seconds — close to the real 30s interval but faster for demo
-      let idx = 1
-      const interval = setInterval(() => {
-        setBusData(getMockBusEvent(idx, 3))
-        setWaypointIndex(idx)
-        idx = (idx + 1) % 16  // loop the route
-      }, 3000)
+      // Emit initial event immediately
+      const initialT = (Date.now() % cycleDuration) / cycleDuration
+      setBusData(getInterpolatedBusEvent(initialT, 3))
 
-      return () => clearInterval(interval)
+      const loop = () => {
+        const now = Date.now()
+        // Update at ~30fps for silky smooth Swiggy/Zomato style continuous movement
+        if (now - lastTime >= 32) {
+          const t = (now % cycleDuration) / cycleDuration
+          const event = getInterpolatedBusEvent(t, 3)
+          setBusData(event)
+          setWaypointIndex(Math.floor(t * 16))
+          lastTime = now
+        }
+        animId = requestAnimationFrame(loop)
+      }
+
+      animId = requestAnimationFrame(loop)
+      return () => cancelAnimationFrame(animId)
     }
   }, [])
 
