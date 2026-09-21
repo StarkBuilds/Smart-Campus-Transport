@@ -1,168 +1,69 @@
 "use client"
 
-// Navbar — Warm Alabaster Frosted Navigation Bar
-// Luxury Editorial styling: warm linen glass, charcoal typography, gold & sapphire accents
-
-import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Bus, Navigation, Layers, ShieldCheck } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-const NAV_LINKS = [
-  { label: "Live Map", href: "/dashboard" },
-  { label: "Routes & Stops", href: "/dashboard#corridor-inspector" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Campus Context", href: "#about" },
-  { label: "Dispatch Desk", href: "#dispatch-desk" },
-]
+import { useState } from "react"
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const pathname = usePathname()
-
-  // Track scroll position
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  // Don't show landing nav inside the dashboard, driver console, or analytics hub
-  if (
-    pathname?.startsWith("/dashboard") ||
-    pathname?.startsWith("/driver") ||
-    pathname?.startsWith("/analytics")
-  )
-    return null
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <>
-      <motion.nav
-        initial={{ y: -70, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          scrolled
-            ? "bg-[#FAF8F5]/92 backdrop-blur-md border-b border-[#E2DCD2] py-3 shadow-[0_4px_20px_rgba(120,113,108,0.05)]"
-            : "bg-[#FAF8F5]/70 backdrop-blur-xs py-4 border-b border-[#E5DFD5]/60"
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-5 flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#B45309] flex items-center justify-center shadow-[0_2px_10px_rgba(30,64,175,0.25)] group-hover:scale-105 transition-transform">
-              <Bus className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-base font-extrabold text-[#1C1917] tracking-tight">
-                CampusRide
-              </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono">
-                  STCET Live Fleet
-                </span>
-              </div>
-            </div>
+    <header className="border-b border-stone-subtle bg-parchment/90 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-[1400px] mx-auto px-6 sm:px-10 h-20 flex items-center justify-between">
+        {/* Brand / Monogram & Edition tag */}
+        <div className="flex items-center gap-6">
+          <Link className="flex items-baseline gap-2.5 group" href="/">
+            <span className="font-serif italic text-3xl font-semibold tracking-tight text-espresso group-hover:text-terracotta transition-colors">CampusRide</span>
+            <span className="text-xs uppercase tracking-widest font-semibold text-stone-text pl-2 border-l border-stone-subtle hidden sm:inline-block">Wayfinding &bull; Fall &rsquo;25</span>
+          </Link>
+        </div>
+
+        {/* Human-Scale Navigation: strictly Home, Live Map, Routes & Stops, How It Works, About */}
+        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-stone-dark">
+          <Link className="text-terracotta font-semibold hover:text-terracotta-dark transition-colors" href="/">Home</Link>
+          <Link className="hover:text-espresso transition-colors" href="/dashboard">Live Map</Link>
+          <Link className="hover:text-espresso transition-colors" href="/routes">Routes &amp; Stops</Link>
+          <Link className="hover:text-espresso transition-colors" href="/#how-it-works">How It Works</Link>
+          <Link className="hover:text-espresso transition-colors" href="/about">About</Link>
+        </nav>
+
+        {/* Quick Action / Student Status with live status indicator */}
+        <div className="flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-2 text-xs text-stone-text bg-parchment-warm px-3 py-1.5 rounded-full border border-stone-subtle">
+            <span className="w-2 h-2 rounded-full bg-sage animate-pulse"></span>
+            <span>Fleet Active &bull; Live GPS</span>
+          </div>
+          <Link className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-espresso text-parchment text-xs font-semibold tracking-wide hover:bg-stone-dark transition-colors shadow-sm" href="/login">
+            <span>Login / My Pass</span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) =>
-              link.href.startsWith("/") ? (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] rounded-lg hover:bg-[#EFECE6]/80 transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] rounded-lg hover:bg-[#EFECE6]/80 transition-colors"
-                >
-                  {link.label}
-                </a>
-              )
-            )}
-          </div>
-
-          {/* Action CTAs */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-xs font-bold text-[#292524] border border-[#DDD7CB] bg-white/90 rounded-xl hover:bg-[#F6F4EE] hover:border-[#CBD5E1] transition-all shadow-2xs"
-            >
-              Portal Login
-            </Link>
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 text-xs font-bold text-[#FAF8F5] bg-[#1C1917] hover:bg-[#292524] rounded-xl transition-all shadow-[0_2px_12px_rgba(28,25,23,0.2)] flex items-center gap-1.5 hover:-translate-y-0.5"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              Live Radar Map
-            </Link>
-          </div>
-
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden p-2 rounded-xl text-[#292524] hover:bg-[#EFECE6] border border-[#DDD7CB] transition-colors"
-            aria-label="Toggle navigation menu"
+          {/* Mobile Menu Toggle */}
+          <button 
+            className="lg:hidden flex items-center justify-center p-2 text-espresso"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
           >
-            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <span className="material-symbols-outlined">{isMobileMenuOpen ? "close" : "menu"}</span>
           </button>
         </div>
-      </motion.nav>
+      </div>
 
-      {/* Mobile Drawer Menu */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-16 z-40 bg-[#FAF8F5]/98 backdrop-blur-lg border-b border-[#DDD7CB] px-5 py-6 shadow-xl lg:hidden"
-          >
-            <div className="flex flex-col gap-3">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 text-sm font-semibold text-[#1C1917] hover:bg-[#EFECE6] rounded-lg"
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-3 border-t border-[#DDD7CB] flex flex-col gap-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-xs font-bold text-[#292524] border border-[#DDD7CB] rounded-xl bg-white"
-                >
-                  Portal Login
-                </Link>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-xs font-bold text-[#FAF8F5] bg-[#1C1917] rounded-xl shadow-md"
-                >
-                  Open Live Radar Map
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-20 left-0 w-full bg-parchment border-b border-stone-subtle shadow-sm flex flex-col py-4 px-6 md:px-10 space-y-4">
+          <Link className="text-terracotta font-semibold text-lg" href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+          <Link className="text-espresso font-medium text-lg" href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Live Map</Link>
+          <Link className="text-espresso font-medium text-lg" href="/routes" onClick={() => setIsMobileMenuOpen(false)}>Routes &amp; Stops</Link>
+          <Link className="text-espresso font-medium text-lg" href="/#how-it-works" onClick={() => setIsMobileMenuOpen(false)}>How It Works</Link>
+          <Link className="text-espresso font-medium text-lg" href="/about" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+          <div className="pt-4 border-t border-stone-subtle">
+            <Link className="inline-flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-espresso text-parchment text-sm font-semibold tracking-wide" href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+              <span>Login / My Pass</span>
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
   )
 }

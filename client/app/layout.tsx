@@ -1,14 +1,24 @@
 import type { Metadata } from "next"
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google"
+import { Plus_Jakarta_Sans, JetBrains_Mono, Newsreader } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import CustomCursor from "@/components/layout/CustomCursor"
 import { Toaster } from "sonner"
+import Navbar from "@/components/layout/Navbar"
+import Footer from "@/components/layout/Footer"
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["400", "500", "600", "700", "800"],
+})
+
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -32,12 +42,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         "h-full antialiased",
         plusJakartaSans.variable,
         jetbrainsMono.variable,
+        newsreader.variable,
         "font-sans"
       )}
     >
+      <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {/* Custom liquid cursor — shows on all pages */}
         <CustomCursor />
+
+        <Navbar />
 
         {/* Toast notifications — styled for luxury light theme */}
         <Toaster
@@ -54,6 +70,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
 
         {children}
+
+        <Footer />
       </body>
     </html>
   )
