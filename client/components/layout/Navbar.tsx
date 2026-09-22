@@ -1,22 +1,11 @@
 "use client"
 
-// Navbar — Warm Alabaster Frosted Navigation Bar
-// Luxury Editorial styling: warm linen glass, charcoal typography, gold & sapphire accents
-
-import { useState, useEffect } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Bus, Navigation, Layers, ShieldCheck } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-const NAV_LINKS = [
-  { label: "Live Map", href: "/dashboard" },
-  { label: "Routes & Stops", href: "/dashboard#corridor-inspector" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Campus Context", href: "#about" },
-  { label: "Dispatch Desk", href: "#dispatch-desk" },
-]
+import { useState, useEffect } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { Wifi, WifiOff, LogOut, CreditCard } from "lucide-react"
+import { useBusSocket } from "@/hooks/use-bus-socket"
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -29,143 +18,149 @@ export default function Navbar() {
   const [userName, setUserName] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
 
-  // Track scroll position
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
+    // Only check auth status on mount/client-side
+    const token = localStorage.getItem("token")
+    if (token) {
+      setUserName(localStorage.getItem("user_name") || "Student")
+      setUserRole(localStorage.getItem("user_role") || "STUDENT")
+    } else {
+      setUserName(null)
+      setUserRole(null)
+    }
+  }, [pathname]) // Re-check if navigation happens
 
-  // Don't show landing nav inside the dashboard, driver console, or analytics hub
-  if (
-    pathname?.startsWith("/dashboard") ||
-    pathname?.startsWith("/driver") ||
-    pathname?.startsWith("/analytics")
-  )
-    return null
+  const handleLogout = () => {
+    localStorage.clear()
+    setUserName(null)
+    router.push("/")
+  }
 
   return (
-    <>
-      <motion.nav
-        initial={{ y: -70, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-          scrolled
-            ? "bg-[#FAF8F5]/92 backdrop-blur-md border-b border-[#E2DCD2] py-3 shadow-[0_4px_20px_rgba(120,113,108,0.05)]"
-            : "bg-[#FAF8F5]/70 backdrop-blur-xs py-4 border-b border-[#E5DFD5]/60"
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-5 flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#B45309] flex items-center justify-center shadow-[0_2px_10px_rgba(30,64,175,0.25)] group-hover:scale-105 transition-transform">
-              <Bus className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-base font-extrabold text-[#1C1917] tracking-tight">
-                CampusRide
-              </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono">
-                  STCET Live Fleet
-                </span>
-              </div>
+    <header className="border-b border-stone-subtle bg-parchment/90 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-[1400px] mx-auto px-6 sm:px-10 h-16 sm:h-20 flex items-center justify-between">
+        {/* Brand / Monogram & Edition tag */}
+        <div className="flex items-center gap-6">
+          <Link className="flex items-center gap-2 group" href="/">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+              <Image
+                src="/assets/logo.png"
+                alt="CampusRide Logo"
+                fill
+                style={{ objectFit: 'contain' }}
+              />
             </div>
             <span className="font-serif italic text-2xl sm:text-3xl font-semibold tracking-tight text-espresso group-hover:text-terracotta transition-colors">CampusRide</span>
             <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-stone-text pl-3 border-l border-stone-subtle hidden sm:inline-block">Student Live Map</span>
           </Link>
         </div>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) =>
-              link.href.startsWith("/") ? (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] rounded-lg hover:bg-[#EFECE6]/80 transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#57534E] hover:text-[#1C1917] rounded-lg hover:bg-[#EFECE6]/80 transition-colors"
-                >
-                  {link.label}
-                </a>
-              )
-            )}
+        {/* Human-Scale Navigation: strictly Home, Live Map, Routes & Stops */}
+        <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-stone-dark">
+          <Link className="hover:text-espresso transition-colors" href="/dashboard">Live Map</Link>
+          <Link className="hover:text-espresso transition-colors" href="/routes">Routes &amp; Stops</Link>
+          {userRole === "ADMIN" && (
+            <Link className="hover:text-espresso transition-colors text-terracotta border-b border-transparent hover:border-terracotta" href="/admin">Admin Console</Link>
+          )}
+          {userRole === "DRIVER" && (
+            <Link className="hover:text-espresso transition-colors text-terracotta border-b border-transparent hover:border-terracotta" href="/driver">Driver Console</Link>
+          )}
+        </nav>
+
+        {/* Quick Action / Student Status with live status indicator */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className={`hidden xl:flex items-center gap-2 text-xs text-stone-text px-3 py-1.5 rounded-full border border-stone-subtle ${isConnected ? 'bg-parchment-warm' : 'bg-red-50'}`}>
+            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-sage animate-pulse' : 'bg-red-500'}`}></span>
+            <span>{isConnected ? "Fleet Active • Live GPS" : "Fleet Offline"}</span>
           </div>
 
-          {/* Action CTAs */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-xs font-bold text-[#292524] border border-[#DDD7CB] bg-white/90 rounded-xl hover:bg-[#F6F4EE] hover:border-[#CBD5E1] transition-all shadow-2xs"
-            >
-              Portal Login
-            </Link>
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 text-xs font-bold text-[#FAF8F5] bg-[#1C1917] hover:bg-[#292524] rounded-xl transition-all shadow-[0_2px_12px_rgba(28,25,23,0.2)] flex items-center gap-1.5 hover:-translate-y-0.5"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              Live Radar Map
-            </Link>
-          </div>
+          {userName ? (
+            <>
+              {/* Authenticated State */}
+              <button
+                type="button"
+                className="hidden sm:flex flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-parchment-warm border border-stone-subtle transition-all shadow-2xs group text-left cursor-pointer active:scale-95"
+                title="Inspect 3D Student Smart Pass"
+                onClick={() => {
+                   if (!isLiveMap) router.push("/dashboard")
+                }}
+              >
+                <div className="w-6 h-6 rounded-lg bg-terracotta text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                  <CreditCard className="w-3 h-3" />
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-xs font-bold text-espresso tracking-tight">
+                    {userName}
+                  </span>
+                </div>
+              </button>
 
-          {/* Mobile Hamburger Button */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden p-2 rounded-xl text-[#292524] hover:bg-[#EFECE6] border border-[#DDD7CB] transition-colors"
-            aria-label="Toggle navigation menu"
+              <button
+                onClick={handleLogout}
+                className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs text-stone-text hover:text-espresso border border-stone-subtle hover:bg-parchment-warm transition-all flex items-center gap-1.5"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Unauthenticated State */}
+              <Link className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-espresso text-parchment text-xs font-semibold tracking-wide hover:bg-stone-dark transition-colors shadow-sm" href="/login">
+                <span>Login</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </Link>
+              <Link className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-stone-subtle text-espresso text-xs font-semibold tracking-wide hover:bg-parchment-warm transition-colors shadow-sm" href="/register">
+                <span>Register</span>
+              </Link>
+            </>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          <button 
+            className="lg:hidden flex items-center justify-center p-2 text-espresso"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle mobile menu"
           >
             <span className="material-symbols-outlined">{isMobileMenuOpen ? "close" : "menu"}</span>
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-16 z-40 bg-[#FAF8F5]/98 backdrop-blur-lg border-b border-[#DDD7CB] px-5 py-6 shadow-xl lg:hidden"
-          >
-            <div className="flex flex-col gap-3">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="px-3 py-2 text-sm font-semibold text-[#1C1917] hover:bg-[#EFECE6] rounded-lg"
-                >
-                  {link.label}
-                </a>
-              ))}
-              <div className="pt-3 border-t border-[#DDD7CB] flex flex-col gap-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-xs font-bold text-[#292524] border border-[#DDD7CB] rounded-xl bg-white"
-                >
-                  Portal Login
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-16 sm:top-20 left-0 w-full bg-parchment border-b border-stone-subtle shadow-sm flex flex-col py-4 px-6 md:px-10 space-y-4">
+          <Link className="text-terracotta font-semibold text-lg" href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+          <Link className="text-espresso font-medium text-lg" href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Live Map</Link>
+          <Link className="text-espresso font-medium text-lg" href="/routes" onClick={() => setIsMobileMenuOpen(false)}>Routes &amp; Stops</Link>
+          {userRole === "ADMIN" && (
+            <Link className="text-terracotta font-medium text-lg" href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Console</Link>
+          )}
+          {userRole === "DRIVER" && (
+            <Link className="text-terracotta font-medium text-lg" href="/driver" onClick={() => setIsMobileMenuOpen(false)}>Driver Console</Link>
+          )}
+
+          <div className="pt-4 border-t border-stone-subtle space-y-3">
+            {userName ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-terracotta text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-bold text-espresso">{userName}</span>
+                </div>
+                <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="inline-flex items-center justify-center w-full py-3 rounded-xl border border-stone-subtle text-sm font-semibold tracking-wide">
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="inline-flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-espresso text-parchment text-sm font-semibold tracking-wide" href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                  <span>Login / My Pass</span>
                 </Link>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-xs font-bold text-[#FAF8F5] bg-[#1C1917] rounded-xl shadow-md"
-                >
-                  Open Live Radar Map
+                <Link className="inline-flex items-center justify-center gap-1.5 w-full py-3 rounded-xl border border-stone-subtle text-espresso text-sm font-semibold tracking-wide" href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                  <span>Register</span>
                 </Link>
               </>
             )}

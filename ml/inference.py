@@ -97,7 +97,8 @@ class DelayPredictor:
                 self.model = booster
 
             # 4. Initialize FeatureEngineer with locked feature manifest
-            self.fe = FeatureEngineer(feature_manifest=self.feature_manifest)
+            self.fe = FeatureEngineer()
+            self.fe.feature_manifest = self.feature_manifest
             self.is_ready = True
             logger.info("DelayPredictor initialized successfully (model_version=%s)", self.model_version)
 

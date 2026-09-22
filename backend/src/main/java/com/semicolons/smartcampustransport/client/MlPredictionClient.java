@@ -1,8 +1,8 @@
 package com.semicolons.smartcampustransport.client;
 
-import com.semicolons.smartcampustransport.dto.PredictionRequest;
-import com.semicolons.smartcampustransport.dto.PredictionResponse;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -10,7 +10,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.time.Duration;
+import com.semicolons.smartcampustransport.dto.PredictionRequest;
+import com.semicolons.smartcampustransport.dto.PredictionResponse;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * HTTP client for communicating with Python ML inference service.
@@ -23,6 +26,7 @@ public class MlPredictionClient {
     private final RestClient restClient;
     private final String mlServiceUrl;
 
+    @Autowired 
     public MlPredictionClient(
             @Value("${ml.service.url:http://localhost:5000}") String mlServiceUrl,
             @Value("${ml.service.timeout-ms:5000}") int timeoutMs) {

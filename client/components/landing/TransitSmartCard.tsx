@@ -291,8 +291,8 @@ export default function TransitSmartCard({
                   <p className="text-[9px] tracking-[0.2em] uppercase mb-0.5 text-[#B45309] font-bold">
                     Candidate / Student
                   </p>
-                  <p className="text-[#1C1917] font-heading text-lg sm:text-xl tracking-wide font-extrabold">
-                    SOHOM GIRI
+                  <p className="text-[#1C1917] font-heading text-lg sm:text-xl tracking-wide font-extrabold uppercase">
+                    {userName}
                   </p>
                   <p className="text-[10px] text-[#78716C] font-mono font-medium">STCET · CSE · ID: 2026-CS-8902</p>
                 </div>
@@ -319,12 +319,28 @@ export default function TransitSmartCard({
 
                 {/* Designated Stop */}
                 <div className="p-3 rounded-xl bg-white/90 border border-[#E2DCD2] shadow-2xs">
-                  <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold mb-0.5">
-                    Your Stop · Behala Chowrasta
-                  </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[9px] tracking-[0.15em] uppercase text-[#B45309] font-bold">
+                      Your Stop · Behala Chowrasta
+                    </p>
+                    <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shadow-sm">
+                      <Activity className="w-2.5 h-2.5 animate-pulse" />
+                      {Math.round(speed)} km/h
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#57534E] font-medium">Scheduled: 08:10 AM</span>
-                    <span className="text-xs font-bold text-[#065F46] font-mono">ETA: 8 min</span>
+                    <span className="text-[11px] text-[#57534E] font-medium">Scheduled: 08:10 AM</span>
+                    <div className="flex items-center gap-1.5">
+                      {predictedDelay > 0 && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                          <TrendingDown className="w-3 h-3" />
+                          +{Math.round(predictedDelay)}m Delay
+                        </span>
+                      )}
+                      <span className={`text-[13px] font-bold font-mono ${etaStatus === 'delayed' ? 'text-rose-600' : 'text-[#065F46]'}`}>
+                        ETA: {dynamicEta} min
+                      </span>
+                    </div>
                   </div>
                 </div>
 

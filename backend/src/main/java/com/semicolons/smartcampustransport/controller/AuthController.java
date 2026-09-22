@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.semicolons.smartcampustransport.dto.RegistrationRequest;
+import com.semicolons.smartcampustransport.dto.RegistrationResponse;
+import com.semicolons.smartcampustransport.service.AssignmentService;
+import com.semicolons.smartcampustransport.dto.AssignmentResponse;
 
 /**
  * Controller for authentication endpoints.
@@ -25,6 +29,7 @@ public class AuthController {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final AssignmentService assignmentService;
 
     /**
      * Issue a JWT token for testing/direct authentication.
@@ -56,6 +61,88 @@ public class AuthController {
             token,
             user.getEmail(),
             user.getRole().name()
+        ));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<RegistrationResponse> register(@RequestBody RegistrationRequest request) {
+        log.info("Registration request for email: {} with role: {}", request.email(), request.role());
+
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            return ResponseEntity.badRequest().body(new RegistrationResponse(
+                null, request.email(), null, null, "Email already registered", null, null, null, null
+            ));
+        }
+
+        User.Role role = "DRIVER".equalsIgnoreCase(request.role()) ? User.Role.DRIVER : User.Role.STUDENT;
+
+        // Role-specific validation
+        if (role == User.Role.STUDENT) {
+            if (request.pickupLatitude() == null || request.pickupLongitude() == null) {
+                return ResponseEntity.badRequest().body(new RegistrationResponse(
+                    null, request.email(), null, null, "Student registration requires pickup coordinates", null, null, null, null
+                ));
+            }
+        } else {
+            if (request.driverId() == null || request.driverId().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(new RegistrationResponse(
+                    null, request.email(), null, null, "Driver registration requires a Driver ID", null, null, null, null
+                ));
+            }
+        }
+
+        User user = User.builder()
+            .email(request.email())
+            .name(request.name())
+            .provider("local")
+            .providerId(request.email())
+            .role(role)
+            .password(request.password())
+            .campus(request.campus())
+            .build();
+
+        if (role == User.Role.STUDENT) {
+            user.setPickupLatitude(request.pickupLatitude());
+            user.setPickupLongitude(request.pickupLongitude());
+        } else {
+            user.setDriverId(request.driverId());
+            user.setAssignedBusId(request.assignedBusId());
+            user.setAssignedRouteId(request.assignedRouteId());
+        }
+
+        User savedUser = userRepository.save(user);
+
+        String assignedRouteId = null;
+        String assignedStopId = null;
+        String assignedRouteName = null;
+        String assignedStopName = null;
+
+        if (role == User.Role.STUDENT && request.pickupLatitude() != null && request.pickupLongitude() != null) {
+            try {
+                AssignmentResponse assignment = assignmentService.autoAssignStudent(
+                    savedUser.getId(), request.campus(), request.pickupLatitude(), request.pickupLongitude()
+                );
+                assignedRouteId = assignment.routeId();
+                assignedStopId = assignment.pickupStopId();
+                assignedRouteName = assignment.routeName();
+                assignedStopName = assignment.pickupStopName();
+            } catch (Exception e) {
+                log.error("Failed to auto-assign student: {}", e.getMessage());
+            }
+        }
+
+        String token = jwtService.generateToken(savedUser.getEmail(), savedUser.getRole().name());
+
+        return ResponseEntity.ok(new RegistrationResponse(
+            token,
+            savedUser.getEmail(),
+            savedUser.getRole().name(),
+            savedUser.getName(),
+            "Registration successful",
+            assignedRouteId,
+            assignedStopId,
+            assignedRouteName,
+            assignedStopName
         ));
     }
 }

@@ -160,4 +160,61 @@ public class AssignmentService {
 
         return AssignmentResponse.from(saved);
     }
+
+    /**
+     * Auto assign student to the nearest stop on a route.
+     * For hackathon demo, we default to route R01 or first available route,
+     * and last stop as the dropoff.
+     */
+    @Transactional
+    public AssignmentResponse autoAssignStudent(Long userId, String campus, Double lat, Double lon) {
+        // Find existing route (e.g. R01)
+        List<Route> routes = routeRepository.findAll();
+        if (routes.isEmpty()) {
+            throw new IllegalStateException("No routes available for assignment");
+        }
+        Route selectedRoute = routes.get(0);
+        for(Route r : routes) {
+            if ("R01".equals(r.getRouteId())) {
+                selectedRoute = r;
+                break;
+            }
+        }
+        
+        List<RouteStop> stops = routeStopRepository.findByRouteIdOrderBySequenceOrder(selectedRoute.getRouteId());
+        if (stops.isEmpty()) {
+            throw new IllegalStateException("No stops available on route " + selectedRoute.getRouteId());
+        }
+        
+        // Exclude the last stop as pickup since it's the destination/campus
+        RouteStop dropoff = stops.get(stops.size() - 1);
+        
+        RouteStop nearestPickup = null;
+        double minDistance = Double.MAX_VALUE;
+        
+        for (int i = 0; i < stops.size() - 1; i++) {
+            RouteStop rtStop = stops.get(i);
+            Stop s = rtStop.getStop();
+            double dLat = s.getLatitude() - lat;
+            double dLon = s.getLongitude() - lon;
+            double distSq = dLat*dLat + dLon*dLon;
+            if (distSq < minDistance) {
+                minDistance = distSq;
+                nearestPickup = rtStop;
+            }
+        }
+        
+        if (nearestPickup == null) {
+            throw new IllegalStateException("No suitable pickup stop found");
+        }
+        
+        return createAssignment(
+            userId,
+            selectedRoute.getRouteId(),
+            nearestPickup.getStop().getStopId(),
+            dropoff.getStop().getStopId(),
+            "2024-FALL"
+        );
+    }
+
 }

@@ -3,6 +3,7 @@ package com.semicolons.smartcampustransport.dto;
 import lombok.Builder;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Response DTO for bus queries.
@@ -19,7 +20,11 @@ public record BusResponse(
     Instant latestTimestamp,
     Double latestSpeedKmh,
     Double bearing,
-    StopInfo nextStop
+    StopInfo currentStop,
+    StopInfo nextStop,
+    List<StopInfo> upcomingStops,
+    Integer etaMinutes,
+    Integer delayMinutes
 ) {
     /**
      * Lightweight location-only response for frequent polling.

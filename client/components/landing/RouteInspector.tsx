@@ -129,9 +129,10 @@ const STOPS: CorridorStop[] = [
 
 interface RouteInspectorProps {
   isEmbedded?: boolean
+  mlConfidenceStr?: string
 }
 
-export default function RouteInspector({ isEmbedded = false }: RouteInspectorProps) {
+export default function RouteInspector({ isEmbedded = false, mlConfidenceStr = "N/A" }: RouteInspectorProps) {
   const [selectedStopId, setSelectedStopId] = useState<string>("stop-2")
   const currentStop = STOPS.find((s) => s.id === selectedStopId) || STOPS[1]
 
@@ -291,7 +292,7 @@ export default function RouteInspector({ isEmbedded = false }: RouteInspectorPro
                   <span className="text-[11px] font-mono text-[#57534E] font-medium">
                     Historical Delay Curve (07:00 – 11:00)
                   </span>
-                  <span className="text-[10px] font-mono text-[#6B21A8] font-bold">XGBoost Confidence 87%</span>
+                  <span className="text-[10px] font-mono text-[#6B21A8] font-bold">ML Confidence {mlConfidenceStr}</span>
                 </div>
                 <div className="flex items-end justify-between gap-2 h-20 pt-2 border-b border-[#DDD7CB] px-1">
                   {currentStop.delayDistribution.map((delay, idx) => {

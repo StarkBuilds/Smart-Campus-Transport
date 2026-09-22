@@ -2,139 +2,60 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* ============================================
-   SMART CAMPUS TRANSPORT — Global Design System
-   Dark theme with Electric Cyan + Deep Navy
-   ============================================ */
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Map our custom colors to Tailwind utility classes */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
 
-  /* Chart colors for analytics sections */
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  /* Sidebar (used in dashboard layout) */
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Border radius scale */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  /* Minimalist Editorial Theme Colors */
+  --color-parchment: #FAF7F2;
+  --color-parchment-warm: #F4EFE6;
+  --color-parchment-deep: #ECE5D8;
+  --color-espresso: #1C1917;
+  --color-stone-subtle: #E7E5E4;
+  --color-stone-medium: #D6D3D1;
+  --color-stone-text: #78716C;
+  --color-stone-dark: #44403C;
+  --color-terracotta: #EA580C;
+  --color-terracotta-dark: #C2410C;
+  --color-terracotta-soft: #FFEDD5;
+  --color-sage: #15803D;
+  --color-sage-soft: #DCFCE7;
+  --color-sage-dark: #166534;
+  --color-transitblue: #1D4ED8;
+  --color-transitblue-soft: #DBEAFE;
 
   /* Fonts */
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  /* Animations */
+  @keyframes drive {
+    0% { left: 0%; transform: translate(-50%, -50%); }
+    45% { left: 50%; transform: translate(-50%, -50%); }
+    55% { left: 50%; transform: translate(-50%, -50%); }
+    100% { left: 100%; transform: translate(-50%, -50%); }
+  }
+  @keyframes grow {
+    0% { transform: scaleX(0); }
+    100% { transform: scaleX(1); }
+  }
 }
 
-/* ============================================
-   ROYAL LIGHT THEME — Luxury Linen & Warm Alabaster
-   Refined high-fashion palette matching the campus fleet aesthetic
-   ============================================ */
+
 :root {
-  /* Warm linen and alabaster backgrounds */
-  --background: #F6F4EE;
+  --background: #FAF7F2;
   --foreground: #1C1917;
-
-  /* Elevated card surfaces */
-  --card: #FFFFFF;
-  --card-foreground: #1C1917;
-
-  /* Popover / dropdown surfaces */
-  --popover: #FFFFFF;
-  --popover-foreground: #1C1917;
-
-  /* Royal Amber Gold — primary interactive color */
-  --primary: #B45309;
-  --primary-foreground: #FFFFFF;
-
-  /* Warm secondary surfaces */
-  --secondary: #FAF8F5;
-  --secondary-foreground: #44403C;
-
-  /* Dimmed / subdued text and warm stone backgrounds */
-  --muted: #F5F2EB;
-  --muted-foreground: #78716C;
-
-  /* Accent — warm champagne highlight */
-  --accent: #FEF3C7;
-  --accent-foreground: #92400E;
-
-  /* Danger / destructive */
-  --destructive: #DC2626;
-
-  /* Warm tailored borders */
-  --border: #DDD7CB;
-  --input: #DDD7CB;
-  --ring: rgba(180, 83, 9, 0.35);
-
-  /* Border radius base */
-  --radius: 0.75rem;
-
-  /* Analytics chart colors */
-  --chart-1: #B45309;
-  --chart-2: #D97706;
-  --chart-3: #10B981;
-  --chart-4: #EF4444;
-  --chart-5: #8B5CF6;
-
-  /* Dashboard sidebar */
-  --sidebar: #FAF8F5;
-  --sidebar-foreground: #1C1917;
-  --sidebar-primary: #B45309;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FEF3C7;
-  --sidebar-accent-foreground: #92400E;
-  --sidebar-border: #DDD7CB;
-  --sidebar-ring: rgba(180, 83, 9, 0.35);
 }
 
-/* ============================================
-   BASE STYLES
-   ============================================ */
 @layer base {
   * {
-    @apply border-border;
     box-sizing: border-box;
   }
 
   html {
-    @apply font-sans;
-    scroll-behavior: smooth;
-    /* Hide the default cursor — our custom cursor replaces it */
-    cursor: none;
+    @apply font-sans scroll-smooth;
   }
 
   body {
@@ -145,173 +66,8 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Keep cursor visible on form elements so it feels natural */
-  input, textarea, select, a, button {
-    cursor: none;
+  ::selection {
+    background-color: #FFEDD5;
+    color: #C2410C;
   }
-
-  /* Scrollbar styling to match warm luxury theme */
-  ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #DDD7CB;
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #B45309;
-  }
-
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: none;
-  }
-}
-
-/* ============================================
-   CUSTOM UTILITY CLASSES
-   Used across multiple components
-   ============================================ */
-@layer utilities {
-  /* Clean royal glassmorphism card effect */
-  .glass {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid #DDD7CB;
-  }
-
-  /* Stronger glass for hero elements */
-  .glass-strong {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid #DDD7CB;
-  }
-
-  /* Glowing warm amber border — used on status badges and live indicators */
-  .glow-cyan {
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3), 0 0 32px rgba(245, 158, 11, 0.1);
-  }
-
-  .glow-cyan-strong {
-    box-shadow: 0 0 24px rgba(245, 158, 11, 0.45), 0 0 48px rgba(245, 158, 11, 0.2);
-  }
-
-  /* Text gradient — used for headings */
-  .text-gradient {
-    background: linear-gradient(135deg, #1C1917 0%, #B45309 60%, #92400E 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .text-gradient-cyan {
-    background: linear-gradient(90deg, #B45309, #D97706);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Subtle noise texture overlay — adds depth to sections */
-  .noise-bg::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Animated gradient orbs for background atmosphere */
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    pointer-events: none;
-    will-change: transform;
-  }
-
-  /* Pulsing live indicator dot */
-  .pulse-live {
-    animation: pulse-live 2s ease-in-out infinite;
-  }
-
-  /* Status badge colors */
-  .status-on-time { color: #10B981; border-color: #10B981; }
-  .status-delayed { color: #F59E0B; border-color: #F59E0B; }
-  .status-late    { color: #EF4444; border-color: #EF4444; }
-}
-
-/* ============================================
-   KEYFRAME ANIMATIONS
-   ============================================ */
-@keyframes pulse-live {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 oklch(0.78 0.15 200 / 60%); }
-  50%       { opacity: 0.8; box-shadow: 0 0 0 8px oklch(0.78 0.15 200 / 0%); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-12px); }
-}
-
-@keyframes orb-drift-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(40px, -30px) scale(1.05); }
-  66%       { transform: translate(-20px, 20px) scale(0.95); }
-}
-
-@keyframes orb-drift-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(-50px, 30px) scale(0.95); }
-  66%       { transform: translate(30px, -20px) scale(1.08); }
-}
-
-@keyframes scan-line {
-  0%   { top: 0%; opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-
-@keyframes border-glow {
-  0%, 100% { border-color: oklch(0.78 0.15 200 / 60%); }
-  50%       { border-color: oklch(0.78 0.15 200 / 100%); }
-}
-
-@keyframes bus-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-4px); }
-}
-
-@keyframes marquee-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.marquee {
-  display: flex;
-  width: max-content;
-  animation: marquee-scroll 28s linear infinite;
-}
-.marquee:hover {
-  animation-play-state: paused;
-}
-
-/* MapLibre map container — makes it fill its parent properly */
-.maplibregl-map {
-  border-radius: inherit;
-}
-
-.maplibregl-canvas {
-  border-radius: inherit;
-}
-
-/* Hide MapLibre attribution logo (just the text, keeping it accessible) */
-.maplibregl-ctrl-attrib {
-  display: none !important;
 }
