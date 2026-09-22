@@ -141,11 +141,43 @@ export const api = {
 
   getAlerts: async (): Promise<Array<{ id: number; busId: string; type: string; status: string; message: string; timestamp: string }>> => {
     try {
-      const res = await fetch(`${API_BASE}/alerts`);
+      const res = await fetch(`${API_BASE}/alerts?audience=student`);
       if (!res.ok) return [];
       return res.json();
     } catch {
       return [];
     }
+  },
+
+  getAdminAlerts: async (): Promise<Array<{ id: number; busId: string; type: string; status: string; message: string; timestamp: string }>> => {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${API_BASE}/alerts?audience=admin`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  getMlMetadata: async (): Promise<Record<string, unknown>> => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`${API_BASE}/ml/metadata`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("Failed to load ML metadata");
+    return res.json();
+  },
+
+  runMlValidation: async (): Promise<Record<string, unknown>> => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`${API_BASE}/ml/validate`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("ML validation failed");
+    return res.json();
   },
 };

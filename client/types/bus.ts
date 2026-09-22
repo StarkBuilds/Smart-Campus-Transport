@@ -33,7 +33,8 @@ export interface BusFeatures {
 // Combined live bus data the frontend uses
 export interface LiveBusData extends BusEvent {
   features?: BusFeatures
-  delay_minutes: number              // positive = late, negative = early
+  delay_minutes: number              // journey / transport status delay
+  next_stop_delay_minutes?: number   // delay to next stop only
   eta_minutes: number                // minutes until arrival at student's stop
   current_stop?: BusStopSummary
   next_stop?: BusStopSummary

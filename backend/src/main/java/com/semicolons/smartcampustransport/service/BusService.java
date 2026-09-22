@@ -99,13 +99,14 @@ public class BusService {
             }
         }
 
-        int delayMinutes = 0;
-        RouteStop currentRouteStop = null;
+        int journeyDelayMinutes = 0;
+        int nextStopDelayMinutes = 0;
 
-        if (nextIndex >= 0) {
+        if (nextIndex >= 0 && bus.getLatestLatitude() != null && bus.getLatestLongitude() != null) {
             RouteStop nextRouteStop = routeStops.get(nextIndex);
             builder.nextStop(toStopInfo(nextRouteStop, null));
 
+            RouteStop currentRouteStop;
             if (nextIndex > 0) {
                 currentRouteStop = routeStops.get(nextIndex - 1);
                 builder.currentStop(toStopInfo(currentRouteStop, null));
@@ -113,12 +114,14 @@ public class BusService {
                 currentRouteStop = nextRouteStop;
             }
 
-            double speed = bus.getLatestSpeedKmh() != null ? bus.getLatestSpeedKmh() : 12.0;
-            double safeSpeed = Math.max(speed, 12.0);
+            // Use actual simulation speed; floor only when essentially stopped to avoid ∞ ETA.
+            double reportedSpeed = bus.getLatestSpeedKmh() != null ? bus.getLatestSpeedKmh() : BusSimulationService.NOMINAL_SPEED_KMH;
+            double etaSpeed = reportedSpeed < 3.0
+                    ? Math.max(BusSimulationService.NOMINAL_SPEED_KMH * 0.6, 12.0)
+                    : reportedSpeed;
 
             List<StopInfo> upcoming = new ArrayList<>();
             int from = Math.max(0, nextIndex);
-            // Delay applied once below after ML/demo merge — preview bases first, then re-map.
             List<int[]> upcomingBases = new ArrayList<>();
             for (int i = from; i < routeStops.size() && upcomingBases.size() < 8; i++) {
                 RouteStop rs = routeStops.get(i);
@@ -129,9 +132,19 @@ public class BusService {
                         rs.getStop().getLatitude(),
                         rs.getStop().getLongitude()
                 );
-                int stopBaseEta = (int) Math.max(1, Math.ceil(distKm / safeSpeed * 60.0));
+                int stopBaseEta = (int) Math.max(1, Math.ceil(distKm / etaSpeed * 60.0));
                 upcomingBases.add(new int[]{i, stopBaseEta});
             }
+
+            // Next-stop base ETA from remaining OSRM road distance.
+            double nextDistKm = routeDistanceService.getRoadDistanceKm(
+                    bus.getRouteId(),
+                    bus.getLatestLatitude(),
+                    bus.getLatestLongitude(),
+                    nextRouteStop.getStop().getLatitude(),
+                    nextRouteStop.getStop().getLongitude()
+            );
+            int nextBaseEta = (int) Math.max(1, Math.ceil(nextDistKm / etaSpeed * 60.0));
 
             RouteStop etaTarget = routeStops.get(Math.max(0, etaTargetIndex >= 0 ? etaTargetIndex : nextIndex));
             double distanceKm = routeDistanceService.getRoadDistanceKm(
@@ -141,42 +154,81 @@ public class BusService {
                     etaTarget.getStop().getLatitude(),
                     etaTarget.getStop().getLongitude()
             );
-            double baseEtaMinutes = distanceKm / safeSpeed * 60.0;
+            double baseEtaMinutes = distanceKm / etaSpeed * 60.0;
 
-            // Schedule delay + ML predicted delay — applied ONCE to final ETA.
-            delayMinutes = delayCalculator.calculateDelayMinutes(bus.getRouteId(), currentRouteStop);
+            // Movement timing deviation vs nominal cruise (demo slowdown shows up here dynamically).
+            double nominalEta = distanceKm / BusSimulationService.NOMINAL_SPEED_KMH * 60.0;
+            int movementDelay = (int) Math.round(baseEtaMinutes - nominalEta);
+
+            // Next-stop delay: schedule at next stop vs predicted arrival, plus local movement share.
+            nextStopDelayMinutes = delayCalculator.calculateArrivalDelayMinutes(
+                    bus.getRouteId(), nextRouteStop, nextBaseEta);
+            double nextNominal = nextDistKm / BusSimulationService.NOMINAL_SPEED_KMH * 60.0;
+            int nextMovementDelay = (int) Math.round(nextBaseEta - nextNominal);
+            if (Math.abs(nextStopDelayMinutes) < 1 && nextMovementDelay != 0) {
+                nextStopDelayMinutes = nextMovementDelay;
+            } else if (nextMovementDelay > 0) {
+                nextStopDelayMinutes = Math.max(nextStopDelayMinutes, nextMovementDelay);
+            }
+
+            // Journey delay: schedule at target + ML predicted delay (once) + movement deviation.
+            journeyDelayMinutes = delayCalculator.calculateArrivalDelayMinutes(
+                    bus.getRouteId(), etaTarget, (int) Math.ceil(baseEtaMinutes));
+            if (Math.abs(journeyDelayMinutes) < 1 && movementDelay != 0) {
+                journeyDelayMinutes = movementDelay;
+            } else if (movementDelay > 0) {
+                journeyDelayMinutes = Math.max(journeyDelayMinutes, movementDelay);
+            }
+
+            Integer mlDelay = null;
             try {
                 var prediction = mlPredictionService.getPredictionForBus(bus.getBusId());
                 if (prediction.isPresent() && prediction.get().predictedDelayMinutes() != null) {
-                    delayMinutes = Math.max(delayMinutes, prediction.get().predictedDelayMinutes());
+                    mlDelay = prediction.get().predictedDelayMinutes();
+                    journeyDelayMinutes = Math.max(journeyDelayMinutes, mlDelay);
                 }
             } catch (Exception ignored) {
                 // ML optional
             }
 
-            if (BusSimulationService.DEMO_DELAY_ACTIVE) {
-                delayMinutes = Math.max(delayMinutes, BusSimulationService.demoDelayMinutes);
+            // Demo intended delay is a ceiling while active, but ETA still comes from slowed speed + this once.
+            if (BusSimulationService.DEMO_DELAY_ACTIVE && BusSimulationService.demoDelayMinutes > 0) {
+                journeyDelayMinutes = Math.max(journeyDelayMinutes, BusSimulationService.demoDelayMinutes);
+                // Next-stop gets a proportional share of journey delay (not the full journey stamp).
+                double share = distanceKm > 1e-6 ? Math.min(1.0, nextDistKm / distanceKm) : 1.0;
+                int nextShare = (int) Math.max(0, Math.round(BusSimulationService.demoDelayMinutes * share));
+                nextStopDelayMinutes = Math.max(nextStopDelayMinutes, nextShare);
             }
 
-            int delayOnce = Math.max(0, delayMinutes);
+            int delayOnce = Math.max(0, journeyDelayMinutes);
             for (int[] pair : upcomingBases) {
                 RouteStop rs = routeStops.get(pair[0]);
+                // Upcoming stop ETAs: road-distance base + journey delay applied once (not synthetic +3/+6/+9).
                 upcoming.add(toStopInfo(rs, pair[1] + delayOnce));
             }
             builder.upcomingStops(upcoming);
 
-            int finalEta = (int) Math.max(1, Math.ceil(baseEtaMinutes + delayOnce));
+            // Final ETA = remaining road time at CURRENT speed + ML predicted delay ONCE.
+            // Demo slowdown already inflates baseEtaMinutes — do not add demoDelay again.
+            int mlOnce = Math.max(0, mlDelay != null ? mlDelay : 0);
+            int finalEta;
+            if (BusSimulationService.DEMO_DELAY_ACTIVE) {
+                int beyondMovement = Math.max(0, mlOnce - Math.max(0, movementDelay));
+                finalEta = (int) Math.max(1, Math.round(baseEtaMinutes + beyondMovement));
+            } else if (delayOnce > 0 && delayOnce > mlOnce) {
+                finalEta = (int) Math.max(1, Math.round(baseEtaMinutes + delayOnce));
+            } else {
+                finalEta = (int) Math.max(1, Math.round(baseEtaMinutes + mlOnce));
+            }
             builder.etaMinutes(finalEta);
+            builder.nextStop(toStopInfo(nextRouteStop, nextBaseEta + Math.max(0, nextStopDelayMinutes)));
         } else {
             builder.upcomingStops(List.of());
             builder.etaMinutes(null);
         }
 
-        if (BusSimulationService.DEMO_DELAY_ACTIVE) {
-            delayMinutes = Math.max(delayMinutes, BusSimulationService.demoDelayMinutes);
-        }
-
-        builder.delayMinutes(delayMinutes);
+        builder.delayMinutes(journeyDelayMinutes);
+        builder.nextStopDelayMinutes(nextStopDelayMinutes);
         return builder.build();
     }
 

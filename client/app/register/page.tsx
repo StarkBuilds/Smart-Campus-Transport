@@ -44,38 +44,56 @@ export default function RegisterPage() {
   const [assignedRouteName, setAssignedRouteName] = useState("")
   const [assignedStopName, setAssignedStopName] = useState("")
   
+  const [routesLoading, setRoutesLoading] = useState(true)
+  
   useEffect(() => {
     let cancelled = false
     async function loadRoutes() {
+      setRoutesLoading(true)
       try {
-        const data = await api.getRoutes()
+        // Prefer backend list; fall back to single R01 if list is empty/unavailable shape
+        let data = await api.getRoutes()
+        if ((!data || data.length === 0)) {
+          const single = await fetch("/api/routes/R01")
+          if (single.ok) {
+            const r = await single.json()
+            data = r?.routeId ? [r] : []
+          }
+        }
         if (cancelled) return
-        setRoutesData(data)
+        setRoutesData(Array.isArray(data) ? data : [])
         if (data.length > 0) {
           const first = data[0]
           setAssignedRouteId(first.routeId)
-          if (first.stops && first.stops.length > 0) {
-            setAssignedStopId(first.stops[0].stopId)
+          const stops = (first.stops || []).slice().sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
+          if (stops.length > 0) {
+            setAssignedStopId(stops[0].stopId)
           }
+        } else {
+          setError("No active campus routes found. Is the backend running?")
         }
       } catch (err) {
         console.error("Could not load routes:", err)
         if (!cancelled) setError("Could not load campus routes. Is the backend running?")
+      } finally {
+        if (!cancelled) setRoutesLoading(false)
       }
     }
     loadRoutes()
     return () => { cancelled = true }
   }, [])
   
-  // Update available stops when route changes
+  // Update available stops when route changes — only that route's sanitized stops
   useEffect(() => {
      if (assignedRouteId && routesData.length > 0) {
         const route = routesData.find(r => r.routeId === assignedRouteId)
         if (route && route.stops && route.stops.length > 0) {
-           // Don't override if current stop is in the new route
-           if (!route.stops.find((s:any) => s.stopId === assignedStopId)) {
-              setAssignedStopId(route.stops[0].stopId)
+           const stops = [...route.stops].sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
+           if (!stops.find((s:any) => s.stopId === assignedStopId)) {
+              setAssignedStopId(stops[0].stopId)
            }
+        } else {
+           setAssignedStopId("")
         }
      }
   }, [assignedRouteId, routesData, assignedStopId])
@@ -294,10 +312,11 @@ export default function RegisterPage() {
                   <select
                     value={assignedRouteId}
                     onChange={(e) => setAssignedRouteId(e.target.value)}
-                    className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm"
+                    disabled={routesLoading || routesData.length === 0}
+                    className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm disabled:opacity-60"
                   >
-                    {routesData.length === 0 && <option value="">Loading routes...</option>}
-                    {routesData.length === 0 && error && <option value="">No routes available</option>}
+                    {routesLoading && <option value="">Loading routes...</option>}
+                    {!routesLoading && routesData.length === 0 && <option value="">No routes available</option>}
                     {routesData.map((r: any) => (
                       <option key={r.routeId} value={r.routeId}>{r.name}</option>
                     ))}
@@ -309,18 +328,21 @@ export default function RegisterPage() {
                   <select
                     value={assignedStopId}
                     onChange={(e) => setAssignedStopId(e.target.value)}
-                    disabled={!assignedRouteId || routesData.length === 0}
+                    disabled={!assignedRouteId || routesLoading || routesData.length === 0}
                     className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm disabled:opacity-60"
                   >
-                    {(!assignedRouteId || !routesData.find((r:any) => r.routeId === assignedRouteId)?.stops?.length) && (
+                    {routesLoading && <option value="">Loading stops...</option>}
+                    {!routesLoading && (!assignedRouteId || !routesData.find((r:any) => r.routeId === assignedRouteId)?.stops?.length) && (
                       <option value="">Select a route first</option>
                     )}
-                    {routesData.find((r:any) => r.routeId === assignedRouteId)?.stops?.map((s: any) => (
+                    {[...(routesData.find((r:any) => r.routeId === assignedRouteId)?.stops || [])]
+                      .sort((a: any, b: any) => a.sequenceOrder - b.sequenceOrder)
+                      .map((s: any) => (
                       <option key={s.stopId} value={s.stopId}>{s.name} (Stop {s.sequenceOrder})</option>
                     ))}
                   </select>
                   <p className="text-[11px] text-stone-text mt-1">
-                    Select your preferred route and boarding point.
+                    Campus → Route → boarding stop. Selection is saved with your account.
                   </p>
                 </div>
               </motion.div>

@@ -24,7 +24,10 @@ public record BusResponse(
     StopInfo nextStop,
     List<StopInfo> upcomingStops,
     Integer etaMinutes,
-    Integer delayMinutes
+    /** Overall journey delay (TRANSPORT STATUS). Positive = late. */
+    Integer delayMinutes,
+    /** Delay relative to next-stop timetable / predicted arrival. */
+    Integer nextStopDelayMinutes
 ) {
     /**
      * Lightweight location-only response for frequent polling.

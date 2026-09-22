@@ -53,6 +53,7 @@ public class SecurityConfig {
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/buses/**", "/api/routes/**", "/api/alerts").permitAll()
+                .requestMatchers("/api/ml/**").hasRole("ADMIN")
 
                 // ADMIN only: Management endpoints
                 .requestMatchers("/api/bus-events").hasRole("ADMIN")

@@ -35,16 +35,19 @@ public class AlertController {
      */
     @GetMapping("/alerts")
     public ResponseEntity<List<AlertResponse>> getAlerts(
-            @RequestParam(required = false) String type) {
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false, defaultValue = "student") String audience) {
 
         List<Alert> alerts;
 
         if (type != null) {
-            // Filter by type - ADMIN only (enforced by security)
+            // Filter by type - typically ADMIN diagnostics
             alerts = alertService.getAlertsByType(Alert.AlertType.valueOf(type));
-        } else {
-            // Get all active alerts
+        } else if ("admin".equalsIgnoreCase(audience)) {
             alerts = alertService.getActiveAlerts();
+        } else {
+            // Students: transport alerts only (excludes DATA_QUALITY diagnostics)
+            alerts = alertService.getStudentVisibleAlerts();
         }
 
         return ResponseEntity.ok(
