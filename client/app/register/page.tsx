@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { api } from "@/services/api"
@@ -11,27 +11,6 @@ const CAMPUSES = [
   "St. Thomas' College of Engineering and Technology",
   "Alipore Campus",
   "Main Campus"
-]
-
-const ROUTES = [
-  { id: "R01", name: "R01 Express" },
-  { id: "R02", name: "R02 Local" }
-]
-
-const CAMPUSES = [
-  "St. Thomas' College of Engineering and Technology",
-  "Alipore Campus",
-  "Main Campus"
-]
-
-const ROUTES = [
-  { id: "R01", name: "R01 Express" },
-  { id: "R02", name: "R02 Local" }
-]
-
-const BUSES = [
-  { id: "B01", name: "Bus B01 (WB-11-2023)" },
-  { id: "B02", name: "Bus B02 (WB-12-2024)" }
 ]
 
 export default function RegisterPage() {
@@ -45,16 +24,16 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [campus, setCampus] = useState(CAMPUSES[0])
   
+  // Routes and Stops Data
+  const [routesData, setRoutesData] = useState<any[]>([])
+  
   // Student fields
-  const [pickupLatitude, setPickupLatitude] = useState<number | "">("")
-  const [pickupLongitude, setPickupLongitude] = useState<number | "">("")
-  const [gettingLocation, setGettingLocation] = useState(false)
-  const [locationError, setLocationError] = useState<string | null>(null)
+  const [assignedRouteId, setAssignedRouteId] = useState("")
+  const [assignedStopId, setAssignedStopId] = useState("")
   
   // Driver fields
   const [driverId, setDriverId] = useState("")
-  const [assignedRouteId, setAssignedRouteId] = useState(ROUTES[0].id)
-  const [assignedBusId, setAssignedBusId] = useState(BUSES[0].id)
+  const [assignedBusId, setAssignedBusId] = useState("B01")
   
   // State
   const [loading, setLoading] = useState(false)
@@ -65,28 +44,41 @@ export default function RegisterPage() {
   const [assignedRouteName, setAssignedRouteName] = useState("")
   const [assignedStopName, setAssignedStopName] = useState("")
   
-  const handleGetLocation = () => {
-    setGettingLocation(true)
-    setLocationError(null)
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setPickupLatitude(position.coords.latitude)
-          setPickupLongitude(position.coords.longitude)
-          setGettingLocation(false)
-        },
-        (err) => {
-          console.error(err)
-          setLocationError("Unable to retrieve location. Please allow access or try again.")
-          setGettingLocation(false)
+  useEffect(() => {
+    let cancelled = false
+    async function loadRoutes() {
+      try {
+        const data = await api.getRoutes()
+        if (cancelled) return
+        setRoutesData(data)
+        if (data.length > 0) {
+          const first = data[0]
+          setAssignedRouteId(first.routeId)
+          if (first.stops && first.stops.length > 0) {
+            setAssignedStopId(first.stops[0].stopId)
+          }
         }
-      )
-    } else {
-      setLocationError("Geolocation is not supported by your browser.")
-      setGettingLocation(false)
+      } catch (err) {
+        console.error("Could not load routes:", err)
+        if (!cancelled) setError("Could not load campus routes. Is the backend running?")
+      }
     }
-  }
+    loadRoutes()
+    return () => { cancelled = true }
+  }, [])
+  
+  // Update available stops when route changes
+  useEffect(() => {
+     if (assignedRouteId && routesData.length > 0) {
+        const route = routesData.find(r => r.routeId === assignedRouteId)
+        if (route && route.stops && route.stops.length > 0) {
+           // Don't override if current stop is in the new route
+           if (!route.stops.find((s:any) => s.stopId === assignedStopId)) {
+              setAssignedStopId(route.stops[0].stopId)
+           }
+        }
+     }
+  }, [assignedRouteId, routesData, assignedStopId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,8 +86,8 @@ export default function RegisterPage() {
     
     // Manual validation
     if (role === "STUDENT") {
-      if (pickupLatitude === "" || pickupLongitude === "") {
-        setError("Please provide your home/pickup location for automatic route assignment.")
+      if (!assignedRouteId || !assignedStopId) {
+        setError("Please select a route and stop.")
         return
       }
     } else {
@@ -114,20 +106,34 @@ export default function RegisterPage() {
         email,
         password,
         campus,
-        role === "STUDENT" ? Number(pickupLatitude) : undefined,
-        role === "STUDENT" ? Number(pickupLongitude) : undefined,
+        undefined, // pickupLatitude
+        undefined, // pickupLongitude
         role === "DRIVER" ? driverId : undefined,
         role === "DRIVER" ? assignedBusId : undefined,
-        role === "DRIVER" ? assignedRouteId : undefined
+        assignedRouteId,
+        role === "STUDENT" ? assignedStopId : undefined
       )
       
       localStorage.setItem("token", data.token)
       localStorage.setItem("user_name", data.name)
       localStorage.setItem("user_role", data.role)
+      if (data.assignedRouteId) localStorage.setItem("user_route", data.assignedRouteId)
+      if (data.assignedStopId) localStorage.setItem("user_stop", data.assignedStopId)
+      if (role === "STUDENT" && assignedStopId) {
+        localStorage.setItem("user_stop", data.assignedStopId || assignedStopId)
+        localStorage.setItem("user_route", data.assignedRouteId || assignedRouteId)
+      }
       
       if (role === "STUDENT") {
-        setAssignedRouteName(data.assignedRouteName || ROUTES.find(r => r.id === data.assignedRouteId)?.name || data.assignedRouteId || "Assigned Route")
-        setAssignedStopName(data.assignedStopName || data.assignedStopId || "Nearest Stop")
+        setAssignedRouteName(data.assignedRouteName || routesData.find(r => r.routeId === assignedRouteId)?.name || "Assigned Route")
+        
+        let stopName = data.assignedStopName
+        if (!stopName) {
+           const r = routesData.find(r => r.routeId === assignedRouteId)
+           const s = r?.stops?.find((st:any) => st.stopId === assignedStopId)
+           stopName = s?.name || "Assigned Stop"
+        }
+        setAssignedStopName(stopName)
       }
       
       setSuccess(true)
@@ -284,42 +290,37 @@ export default function RegisterPage() {
                 className="flex flex-col gap-4 pt-2 border-t border-stone-subtle"
               >
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-espresso flex justify-between">
-                    <span>Home/Pickup Location</span>
-                    <button 
-                      type="button" 
-                      onClick={handleGetLocation}
-                      disabled={gettingLocation}
-                      className="text-xs text-terracotta hover:text-terracotta-dark disabled:opacity-50"
-                    >
-                      {gettingLocation ? "Locating..." : "Use Current Location"}
-                    </button>
-                  </label>
-                  
-                  {locationError && (
-                    <p className="text-xs text-terracotta">{locationError}</p>
-                  )}
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      step="any"
-                      value={pickupLatitude}
-                      onChange={(e) => setPickupLatitude(e.target.value ? Number(e.target.value) : "")}
-                      placeholder="Latitude"
-                      className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-sm placeholder:text-stone-medium focus:outline-none focus:border-terracotta transition-all shadow-sm"
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      value={pickupLongitude}
-                      onChange={(e) => setPickupLongitude(e.target.value ? Number(e.target.value) : "")}
-                      placeholder="Longitude"
-                      className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-sm placeholder:text-stone-medium focus:outline-none focus:border-terracotta transition-all shadow-sm"
-                    />
-                  </div>
+                  <label className="text-sm font-semibold text-espresso">Select Route</label>
+                  <select
+                    value={assignedRouteId}
+                    onChange={(e) => setAssignedRouteId(e.target.value)}
+                    className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm"
+                  >
+                    {routesData.length === 0 && <option value="">Loading routes...</option>}
+                    {routesData.length === 0 && error && <option value="">No routes available</option>}
+                    {routesData.map((r: any) => (
+                      <option key={r.routeId} value={r.routeId}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-espresso">Home / Pickup Stop</label>
+                  <select
+                    value={assignedStopId}
+                    onChange={(e) => setAssignedStopId(e.target.value)}
+                    disabled={!assignedRouteId || routesData.length === 0}
+                    className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm disabled:opacity-60"
+                  >
+                    {(!assignedRouteId || !routesData.find((r:any) => r.routeId === assignedRouteId)?.stops?.length) && (
+                      <option value="">Select a route first</option>
+                    )}
+                    {routesData.find((r:any) => r.routeId === assignedRouteId)?.stops?.map((s: any) => (
+                      <option key={s.stopId} value={s.stopId}>{s.name} (Stop {s.sequenceOrder})</option>
+                    ))}
+                  </select>
                   <p className="text-[11px] text-stone-text mt-1">
-                    Your location is used to automatically assign you to the nearest route step.
+                    Select your preferred route and boarding point.
                   </p>
                 </div>
               </motion.div>
@@ -352,8 +353,8 @@ export default function RegisterPage() {
                     onChange={(e) => setAssignedRouteId(e.target.value)}
                     className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm"
                   >
-                    {ROUTES.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
+                    {routesData.map((r: any) => (
+                      <option key={r.routeId} value={r.routeId}>{r.name}</option>
                     ))}
                   </select>
                 </div>
@@ -365,9 +366,8 @@ export default function RegisterPage() {
                     onChange={(e) => setAssignedBusId(e.target.value)}
                     className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base focus:outline-none focus:border-terracotta transition-all shadow-sm"
                   >
-                    {BUSES.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
+                      <option value="B01">Bus B01 (WB-11-2023)</option>
+                      <option value="B02">Bus B02 (WB-12-2024)</option>
                   </select>
                 </div>
               </motion.div>

@@ -133,18 +133,10 @@ function LoginForm() {
           </button>
         </div>
 
-          <button
-            type="button"
-            onClick={handleSSOClick}
-            className="w-full py-3.5 rounded-xl bg-white border border-stone-subtle hover:bg-parchment text-espresso text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
-          >
-            <span>Sign in with Campus SSO (Not Configured)</span>
-          </button>
-        </div>
 
         <div className="mt-8 pt-6 border-t border-stone-subtle text-center flex flex-col gap-2">
           <p className="text-sm text-stone-text">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="font-semibold text-terracotta hover:text-terracotta-dark">
               Register here
             </Link>

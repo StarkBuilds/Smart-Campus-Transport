@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -23,11 +25,23 @@ public class RouteGeometryService {
 
     private final RouteStopRepository routeStopRepository;
     private final ObjectMapper objectMapper;
+    private final Map<String, JsonNode> geometryCache = new ConcurrentHashMap<>();
+    private final Map<String, String> signatureCache = new ConcurrentHashMap<>();
+
     @Transactional(readOnly = true)
     public JsonNode getGeometry(String routeId) {
         List<RouteStop> routeStops = routeStopRepository.findByRouteIdOrderBySequenceOrder(routeId);
         if (routeStops.size() < 2) {
             throw new IllegalStateException("Route " + routeId + " needs at least two active stops");
+        }
+
+        String signature = routeStops.stream()
+                .map(rs -> rs.getStop().getStopId() + ":" + rs.getSequenceOrder())
+                .reduce((left, right) -> left + "|" + right)
+                .orElse("");
+
+        if (signature.equals(signatureCache.get(routeId)) && geometryCache.containsKey(routeId)) {
+            return geometryCache.get(routeId);
         }
 
         String coordinates = routeStops.stream()
@@ -63,7 +77,10 @@ public class RouteGeometryService {
                     || root.path("routes").isEmpty()) {
                 throw new IllegalStateException("OSRM returned no route for " + routeId);
             }
-            return root.path("routes").get(0).path("geometry");
+            JsonNode geom = root.path("routes").get(0).path("geometry");
+            geometryCache.put(routeId, geom);
+            signatureCache.put(routeId, signature);
+            return geom;
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to parse OSRM geometry for " + routeId, exception);
         }

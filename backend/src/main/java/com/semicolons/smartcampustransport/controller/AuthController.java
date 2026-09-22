@@ -13,13 +13,13 @@ import com.semicolons.smartcampustransport.dto.RegistrationRequest;
 import com.semicolons.smartcampustransport.dto.RegistrationResponse;
 import com.semicolons.smartcampustransport.service.AssignmentService;
 import com.semicolons.smartcampustransport.dto.AssignmentResponse;
+import com.semicolons.smartcampustransport.entity.RouteStop;
+import com.semicolons.smartcampustransport.repository.RouteStopRepository;
+
+import java.util.List;
 
 /**
  * Controller for authentication endpoints.
- *
- * Endpoints:
- * - POST /api/auth/token: Issue JWT token for testing/direct login
- * - GET /api/auth/me: Get current user info from JWT
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -30,19 +30,32 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final AssignmentService assignmentService;
+    private final RouteStopRepository routeStopRepository;
 
-    /**
-     * Issue a JWT token for testing/direct authentication.
-     * In production, users will login via OAuth2, but this endpoint is useful for:
-     * 1. Bus devices (which can't do OAuth2 flows)
-     * 2. Integration testing
-     * 3. Admin CLI tools
-     */
     @PostMapping("/token")
-    public ResponseEntity<AuthResponse> generateToken(@RequestBody AuthRequest request) {
+    public ResponseEntity<?> generateToken(@RequestBody AuthRequest request) {
         log.info("Token request for email: {}", request.email());
 
-        // For MVP/testing: If user exists, use their role. Otherwise create STUDENT user.
+        // Support for creating the standard demo admin immediately
+        if ("admin@campusride.edu".equalsIgnoreCase(request.email())) {
+            User admin = userRepository.findByEmail(request.email()).orElseGet(() -> {
+                User newAdmin = User.builder()
+                        .email(request.email())
+                        .name("System Admin")
+                        .provider("local")
+                        .providerId(request.email())
+                        .role(User.Role.ADMIN)
+                        .password("admin123")
+                        .build();
+                return userRepository.save(newAdmin);
+            });
+            if (request.password() != null && !request.password().equals(admin.getPassword())) {
+                return ResponseEntity.status(401).body("Invalid credentials");
+            }
+            String token = jwtService.generateToken(admin.getEmail(), admin.getRole().name());
+            return ResponseEntity.ok(new AuthResponse(token, admin.getEmail(), admin.getRole().name()));
+        }
+
         User user = userRepository.findByEmail(request.email())
             .orElseGet(() -> {
                 User newUser = User.builder()
@@ -51,17 +64,18 @@ public class AuthController {
                     .provider("local")
                     .providerId(request.email())
                     .role(User.Role.STUDENT)
+                    .password(request.password())
                     .build();
                 return userRepository.save(newUser);
             });
 
-        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        // Simple password check for MVP
+        if (request.password() != null && user.getPassword() != null && !request.password().equals(user.getPassword())) {
+            return ResponseEntity.status(401).body("Invalid credentials");
+        }
 
-        return ResponseEntity.ok(new AuthResponse(
-            token,
-            user.getEmail(),
-            user.getRole().name()
-        ));
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        return ResponseEntity.ok(new AuthResponse(token, user.getEmail(), user.getRole().name()));
     }
 
     @PostMapping("/register")
@@ -74,16 +88,16 @@ public class AuthController {
             ));
         }
 
-        User.Role role = "DRIVER".equalsIgnoreCase(request.role()) ? User.Role.DRIVER : User.Role.STUDENT;
+        User.Role role = "DRIVER".equalsIgnoreCase(request.role()) ? User.Role.DRIVER : 
+                         ("ADMIN".equalsIgnoreCase(request.role()) ? User.Role.ADMIN : User.Role.STUDENT);
 
-        // Role-specific validation
         if (role == User.Role.STUDENT) {
-            if (request.pickupLatitude() == null || request.pickupLongitude() == null) {
+            if (request.assignedRouteId() == null || request.assignedStopId() == null) {
                 return ResponseEntity.badRequest().body(new RegistrationResponse(
-                    null, request.email(), null, null, "Student registration requires pickup coordinates", null, null, null, null
+                    null, request.email(), null, null, "Student registration requires route and stop", null, null, null, null
                 ));
             }
-        } else {
+        } else if (role == User.Role.DRIVER) {
             if (request.driverId() == null || request.driverId().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(new RegistrationResponse(
                     null, request.email(), null, null, "Driver registration requires a Driver ID", null, null, null, null
@@ -102,9 +116,8 @@ public class AuthController {
             .build();
 
         if (role == User.Role.STUDENT) {
-            user.setPickupLatitude(request.pickupLatitude());
-            user.setPickupLongitude(request.pickupLongitude());
-        } else {
+            user.setAssignedRouteId(request.assignedRouteId());
+        } else if (role == User.Role.DRIVER) {
             user.setDriverId(request.driverId());
             user.setAssignedBusId(request.assignedBusId());
             user.setAssignedRouteId(request.assignedRouteId());
@@ -117,17 +130,21 @@ public class AuthController {
         String assignedRouteName = null;
         String assignedStopName = null;
 
-        if (role == User.Role.STUDENT && request.pickupLatitude() != null && request.pickupLongitude() != null) {
+        if (role == User.Role.STUDENT) {
             try {
-                AssignmentResponse assignment = assignmentService.autoAssignStudent(
-                    savedUser.getId(), request.campus(), request.pickupLatitude(), request.pickupLongitude()
-                );
-                assignedRouteId = assignment.routeId();
-                assignedStopId = assignment.pickupStopId();
-                assignedRouteName = assignment.routeName();
-                assignedStopName = assignment.pickupStopName();
+                List<RouteStop> stops = routeStopRepository.findByRouteIdOrderBySequenceOrder(request.assignedRouteId());
+                if (!stops.isEmpty()) {
+                    String dropoffStopId = stops.get(stops.size() - 1).getStop().getStopId();
+                    AssignmentResponse assignment = assignmentService.createAssignment(
+                        savedUser.getId(), request.assignedRouteId(), request.assignedStopId(), dropoffStopId, "2024-FALL"
+                    );
+                    assignedRouteId = assignment.routeId();
+                    assignedStopId = assignment.pickupStopId();
+                    assignedRouteName = assignment.routeName();
+                    assignedStopName = assignment.pickupStopName();
+                }
             } catch (Exception e) {
-                log.error("Failed to auto-assign student: {}", e.getMessage());
+                log.error("Failed to assign student: {}", e.getMessage());
             }
         }
 
