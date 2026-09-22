@@ -55,10 +55,12 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Human-Scale Navigation: strictly Home, Live Map, Routes & Stops */}
+        {/* Human-Scale Navigation */}
         <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-stone-dark">
+          <Link className="hover:text-espresso transition-colors" href="/#how-it-works">How It Works</Link>
           <Link className="hover:text-espresso transition-colors" href="/dashboard">Live Map</Link>
           <Link className="hover:text-espresso transition-colors" href="/routes">Routes &amp; Stops</Link>
+          <Link className="hover:text-espresso transition-colors" href="/about">About</Link>
           {userRole === "ADMIN" && (
             <Link className="hover:text-espresso transition-colors text-terracotta border-b border-transparent hover:border-terracotta" href="/admin">Admin Console</Link>
           )}
@@ -131,9 +133,10 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden absolute top-16 sm:top-20 left-0 w-full bg-parchment border-b border-stone-subtle shadow-sm flex flex-col py-4 px-6 md:px-10 space-y-4">
-          <Link className="text-terracotta font-semibold text-lg" href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+          <Link className="text-espresso font-medium text-lg" href="/#how-it-works" onClick={() => setIsMobileMenuOpen(false)}>How It Works</Link>
           <Link className="text-espresso font-medium text-lg" href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Live Map</Link>
           <Link className="text-espresso font-medium text-lg" href="/routes" onClick={() => setIsMobileMenuOpen(false)}>Routes &amp; Stops</Link>
+          <Link className="text-espresso font-medium text-lg" href="/about" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
           {userRole === "ADMIN" && (
             <Link className="text-terracotta font-medium text-lg" href="/admin" onClick={() => setIsMobileMenuOpen(false)}>Admin Console</Link>
           )}

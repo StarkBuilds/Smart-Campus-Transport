@@ -1,19 +1,83 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
+import { useEffect, useState } from "react"
+import { motion, useReducedMotion } from "framer-motion"
+import { X } from "lucide-react"
+import TransitSmartCard from "@/components/landing/TransitSmartCard"
+
+interface RouteStop { stopId: string; name: string }
+interface RouteData { routeId: string; name: string; stops: RouteStop[] }
+interface BusData {
+  busId: string
+  status: string
+  routeId?: string
+  etaMinutes?: number
+  nextStop?: { name: string }
+}
 
 export default function LandingPage() {
+  const [routes, setRoutes] = useState<RouteData[]>([])
+  const [buses, setBuses] = useState<BusData[]>([])
+  const [userName, setUserName] = useState("Student")
+  const [showPass, setShowPass] = useState(false)
+
+  const [heroText, setHeroText] = useState("")
+  const fullHeroText = "Know when\nto ride."
+  const reduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setHeroText(fullHeroText)
+      return
+    }
+    let i = 0
+    let timeout: NodeJS.Timeout
+    const typeWriter = () => {
+      if (i <= fullHeroText.length) {
+        setHeroText(fullHeroText.substring(0, i))
+        i++
+        timeout = setTimeout(typeWriter, 80)
+      }
+    }
+    timeout = setTimeout(typeWriter, 300)
+    return () => clearTimeout(timeout)
+  }, [reduceMotion])
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("user_name")
+    if (storedName) setUserName(storedName)
+    Promise.all([
+      fetch("/api/routes").then((response) => response.ok ? response.json() : []),
+      fetch("/api/buses").then((response) => response.ok ? response.json() : []),
+    ]).then(([routeData, busData]) => {
+      setRoutes(Array.isArray(routeData) ? routeData : [])
+      setBuses(Array.isArray(busData) ? busData : [])
+    }).catch(() => {})
+  }, [])
+
+  const activeRoute = routes.find((route) => route.routeId === "R01") ?? routes[0]
+  const activeBus = buses.find((bus) => bus.routeId === activeRoute?.routeId) ?? buses[0]
+  const routeStops = activeRoute?.stops ?? []
+
   return (
     <main className="flex-grow w-full">
+      <style jsx>{`
+        @keyframes campusride-caret { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
+        .hero-caret { animation: campusride-caret .9s steps(1, end) infinite; }
+        @media (prefers-reduced-motion: reduce) { .hero-caret { animation: none; opacity: 1; } }
+      `}</style>
       {/* 1. HERO — FULL-WIDTH BACKGROUND VISUAL */}
       <section className="relative min-h-[550px] lg:min-h-[720px] flex items-center justify-center overflow-hidden border-b border-stone-subtle" id="planner">
         {/* Full-width Responsive Background Image */}
         <div className="absolute inset-0 z-0">
-          <Image 
-            src="/hero-bus.png" 
-            alt="CampusRide Visual Artwork" 
-            fill 
+          <Image
+            src="/hero-bus.png"
+            alt="CampusRide Visual Artwork"
+            fill
             priority
-            className="object-cover object-center scale-105 transition-transform duration-1000 ease-out" 
+            className="object-cover object-center scale-105 transition-transform duration-1000 ease-out"
           />
           {/* Subtle Multi-stage Gradient Overlays for Guaranteed Text Contrast */}
           <div className="absolute inset-0 bg-gradient-to-r from-parchment/95 via-parchment/85 to-parchment/40 sm:to-transparent z-10" />
@@ -27,10 +91,13 @@ export default function LandingPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-terracotta animate-pulse"></span>
               <span>Live Campus Transit Companion</span>
             </div>
-            
+
             <h1 className="font-serif text-5xl sm:text-7xl lg:text-8xl font-normal leading-[1.04] tracking-tight text-espresso mb-6 drop-shadow-xs">
               Track your campus bus.<br />
-              <span className="italic font-serif text-stone-dark">Know when to ride.</span>
+              <span className="italic font-serif text-stone-dark whitespace-pre-line">
+                {heroText}
+                <span className="hero-caret text-terracotta ml-1">|</span>
+              </span>
             </h1>
             
             <p className="text-lg sm:text-xl text-stone-dark leading-relaxed font-normal mb-10 max-w-xl bg-parchment/40 backdrop-blur-sm p-4 rounded-2xl border border-stone-subtle/40 shadow-xs">
@@ -57,29 +124,19 @@ export default function LandingPage() {
               <span>I need to go from</span>
               <div className="relative inline-flex items-center">
                 <select className="bg-parchment border-b-2 border-stone-dark py-1 pl-2.5 pr-7 text-espresso font-semibold rounded focus:ring-0 focus:border-terracotta h-9 cursor-pointer border-x-0 border-t-0" defaultValue="1">
-                  <option value="1">Central Library Quad</option>
-                  <option value="2">North Graduate Dormitories</option>
-                  <option value="3">Undergraduate Quad / Union</option>
-                  <option value="4">South Campus Biotech Pavilion</option>
+                  {routeStops.length > 0 ? routeStops.map((stop) => <option key={stop.stopId}>{stop.name}</option>) : <option>Route data unavailable</option>}
                 </select>
               </div>
               <span>to</span>
               <div className="relative inline-flex items-center">
                 <select className="bg-parchment border-b-2 border-stone-dark py-1 pl-2.5 pr-7 text-espresso font-semibold rounded focus:ring-0 focus:border-terracotta h-9 cursor-pointer border-x-0 border-t-0" defaultValue="1">
-                  <option value="1">Science &amp; Engineering Hall</option>
-                  <option value="2">Athletic Complex &amp; Fields</option>
-                  <option value="3">North Graduate Dormitories</option>
-                  <option value="4">Law &amp; Humanities Quad</option>
-                  <option value="5">East Commuter Lot C</option>
+                  {routeStops.length > 0 ? routeStops.map((stop) => <option key={stop.stopId}>{stop.name}</option>) : <option>Route data unavailable</option>}
                 </select>
               </div>
               <span>arriving by</span>
               <div className="relative inline-flex items-center">
                 <select className="bg-parchment border-b-2 border-terracotta text-terracotta-dark font-semibold py-1 pl-2.5 pr-7 rounded focus:ring-0 focus:border-terracotta h-9 cursor-pointer border-x-0 border-t-0" defaultValue="1">
-                  <option value="1">Departing in 4 mins (Next Shuttle)</option>
-                  <option value="2">2:15 PM (Class starts 2:30)</option>
-                  <option value="3">2:45 PM</option>
-                  <option value="4">3:15 PM</option>
+                  <option>{activeBus?.etaMinutes != null ? `Next bus in ${activeBus.etaMinutes} min` : "Live ETA unavailable"}</option>
                 </select>
               </div>
             </div>
@@ -93,16 +150,16 @@ export default function LandingPage() {
           {/* Micro Recommendations Strip */}
           <div className="mt-4 pt-4 border-t border-stone-subtle/80 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-text">
             <div className="flex items-center gap-4">
-              <span className="font-medium text-espresso">Suggested Route:</span>
-              <span className="inline-flex items-center gap-1.5 text-stone-dark">
-                <span className="w-2 h-2 rounded-full bg-transitblue"></span> Route R01 (Blue Line) &bull; Departs in 4m (Platform 1)
+                <span className="font-medium text-espresso">Active route:</span>
+                <span className="inline-flex items-center gap-1.5 text-stone-dark">
+                <span className="w-2 h-2 rounded-full bg-transitblue"></span> {activeRoute?.name ?? "Live route data unavailable"} {activeBus ? `• ${activeBus.busId} • ${activeBus.status}` : ""}
               </span>
               <span className="hidden sm:inline text-stone-medium">|</span>
               <span className="inline-flex items-center gap-1 text-sage font-medium">
                 <span className="material-symbols-outlined text-xs">directions_walk</span> 6 min walk via North Promenade
               </span>
             </div>
-            <span className="italic font-serif text-stone-text">Live updates refresh every 3 seconds</span>
+            <span className="italic font-serif text-stone-text">{activeBus?.nextStop ? `Next stop: ${activeBus.nextStop.name}` : "Live updates refresh from CampusRide telemetry"}</span>
           </div>
         </div>
       </section>
@@ -125,7 +182,7 @@ export default function LandingPage() {
           {/* TWO LARGE FEATURE CARDS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             {/* Card 01: Live Bus Tracking */}
-            <div className="group relative bg-parchment-warm border border-stone-subtle rounded-3xl overflow-hidden flex flex-col justify-between h-[480px] sm:h-[520px] shadow-xs hover:border-stone-medium transition-colors">
+            <motion.div initial={reduceMotion ? false : { opacity: 0, x: -18 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }} transition={reduceMotion ? { duration: 0 } : { duration: 0.55 }} className="group relative bg-parchment-warm border border-stone-subtle rounded-3xl overflow-hidden flex flex-col justify-between h-[480px] sm:h-[520px] shadow-xs hover:border-stone-medium transition-colors">
               {/* Background large faint 01 */}
               <div className="absolute -bottom-10 -right-4 text-[220px] font-serif italic text-stone-subtle/30 z-0 select-none pointer-events-none leading-none">
                 01
@@ -150,19 +207,19 @@ export default function LandingPage() {
               {/* Reusable Visual Area */}
               <div className="relative h-44 sm:h-52 w-full px-8 sm:px-12 pb-8 z-10">
                 <div className="w-full h-full relative rounded-2xl overflow-hidden border border-stone-subtle/60 shadow-sm transform group-hover:-translate-y-1.5 transition-transform duration-500 ease-out">
-                  <Image 
-                    src="/hero-bus.png" 
-                    alt="Live Bus Tracking Demonstration" 
-                    fill 
-                    className="object-cover object-center" 
+                  <Image
+                    src="/assets/campusride-bus.png"
+                    alt="Live Bus Tracking Demonstration"
+                    fill
+                    className="object-cover object-center"
                   />
                   <div className="absolute inset-0 bg-espresso/5 pointer-events-none" />
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Card 02: Smart ETA Prediction */}
-            <div className="group relative bg-parchment-warm border border-stone-subtle rounded-3xl overflow-hidden flex flex-col justify-between h-[480px] sm:h-[520px] shadow-xs hover:border-stone-medium transition-colors">
+            <motion.div initial={reduceMotion ? false : { opacity: 0, x: 18 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }} transition={reduceMotion ? { duration: 0 } : { duration: 0.55, delay: 0.08 }} className="group relative bg-parchment-warm border border-stone-subtle rounded-3xl overflow-hidden flex flex-col justify-between h-[480px] sm:h-[520px] shadow-xs hover:border-stone-medium transition-colors">
               {/* Background large faint 02 */}
               <div className="absolute -bottom-10 -right-4 text-[220px] font-serif italic text-stone-subtle/30 z-0 select-none pointer-events-none leading-none">
                 02
@@ -196,7 +253,7 @@ export default function LandingPage() {
                   <div className="absolute inset-0 bg-espresso/5 pointer-events-none" />
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Horizontal Information Strip */}
@@ -245,24 +302,20 @@ export default function LandingPage() {
               <div className="h-full bg-terracotta w-full origin-left motion-reduce:!animate-none" style={{ animation: 'grow 6s ease-in-out infinite' }}></div>
             </div>
 
-            {/* Horizontal Moving Bus Icon on Desktop */}
-            <div className="hidden md:block absolute top-[120px] left-20 right-20 h-6 -translate-y-1/2 pointer-events-none z-20 motion-reduce:!animate-none" style={{ animation: 'drive 6s ease-in-out infinite' }}>
-              <div className="w-8 h-8 rounded-full bg-terracotta text-parchment flex items-center justify-center shadow-lg -ml-4 border border-espresso">
-                <span className="material-symbols-outlined text-sm">directions_bus</span>
-              </div>
-            </div>
-
             {/* Three Large Refined Glass-like Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
               {/* Card 01 */}
-              <div className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
+              <motion.div initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={reduceMotion ? { duration: 0 } : { duration: 0.45 }} className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
                 <div className="absolute -bottom-6 -right-2 text-[140px] font-serif italic text-stone-dark/20 select-none pointer-events-none leading-none z-0">
                   01
                 </div>
 
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-espresso border border-stone-dark flex items-center justify-center text-terracotta mb-6 shadow-xs">
+                  <div className="relative w-12 h-12 rounded-2xl bg-espresso border border-stone-dark flex items-center justify-center text-terracotta mb-8 shadow-xs">
                     <span className="material-symbols-outlined text-2xl">pin_drop</span>
+                    <span className="absolute -right-2 -bottom-2 flex h-6 w-6 items-center justify-center rounded-full bg-terracotta text-parchment shadow-md" aria-hidden="true">
+                      <span className="material-symbols-outlined text-[10px]">directions_bus</span>
+                    </span>
                   </div>
                   <span className="text-xs uppercase font-semibold tracking-widest text-stone-medium block mb-2">Step 01</span>
                   <h3 className="font-serif text-2xl text-parchment mb-3">Choose Your Stop</h3>
@@ -275,10 +328,10 @@ export default function LandingPage() {
                   <span>Locate Platforms</span>
                   <span className="material-symbols-outlined text-base">arrow_forward</span>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Card 02 */}
-              <div className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
+              <motion.div initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={reduceMotion ? { duration: 0 } : { duration: 0.45, delay: 0.12 }} className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
                 <div className="absolute -bottom-6 -right-2 text-[140px] font-serif italic text-stone-dark/20 select-none pointer-events-none leading-none z-0">
                   02
                 </div>
@@ -298,10 +351,10 @@ export default function LandingPage() {
                   <span>Live Telemetry</span>
                   <span className="material-symbols-outlined text-base">arrow_forward</span>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Card 03 */}
-              <div className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
+              <motion.div initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={reduceMotion ? { duration: 0 } : { duration: 0.45, delay: 0.24 }} className="bg-stone-dark/20 border border-stone-dark/80 backdrop-blur-md rounded-3xl p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between group hover:border-terracotta/40 transition-colors">
                 <div className="absolute -bottom-6 -right-2 text-[140px] font-serif italic text-stone-dark/20 select-none pointer-events-none leading-none z-0">
                   03
                 </div>
@@ -321,7 +374,7 @@ export default function LandingPage() {
                   <span>Delay Mitigation</span>
                   <span className="material-symbols-outlined text-base">arrow_forward</span>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -353,7 +406,7 @@ export default function LandingPage() {
           </div>
 
           {/* Tactile Card Graphic */}
-          <div className="w-full md:w-80 bg-parchment border border-stone-subtle p-6 rounded-2xl shadow-xs shrink-0 font-sans">
+          <button type="button" onClick={() => setShowPass(true)} className="w-full md:w-80 text-left bg-parchment border border-stone-subtle p-6 rounded-2xl shadow-xs shrink-0 font-sans cursor-pointer hover:border-terracotta transition-colors" aria-label="Open CampusRide pass">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <div className="font-serif italic font-medium text-lg text-espresso">CampusRide</div>
@@ -363,7 +416,7 @@ export default function LandingPage() {
             </div>
             <div className="space-y-1 mb-6">
               <div className="text-xs text-stone-text uppercase tracking-widest text-[10px]">Student Holder</div>
-              <div className="font-medium text-espresso text-sm">Elena Rostova &bull; ID #489201</div>
+              <div className="font-medium text-espresso text-sm">{userName}</div>
               <div className="text-xs text-sage font-medium flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-sage"></span> Verified Active Fall &rsquo;25
               </div>
@@ -372,9 +425,20 @@ export default function LandingPage() {
               <span>Tap to Board Any Shuttle</span>
               <span className="font-mono font-semibold">NFC ACTIVE</span>
             </div>
-          </div>
+          </button>
         </div>
       </section>
+
+      {showPass && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-espresso/55 p-4" onClick={() => setShowPass(false)}>
+          <div className="relative max-h-[92vh] max-w-[95vw]" onClick={(event) => event.stopPropagation()}>
+            <button type="button" onClick={() => setShowPass(false)} className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-espresso shadow-lg" aria-label="Close pass">
+              <X className="h-4 w-4" />
+            </button>
+            <TransitSmartCard userName={userName} dynamicEta={activeBus?.etaMinutes ?? 0} />
+          </div>
+        </div>
+      )}
     </main>
   )
 }

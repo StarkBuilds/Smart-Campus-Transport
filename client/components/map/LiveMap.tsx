@@ -124,41 +124,36 @@ export default function LiveMap({
     onMapClick?.(e.lngLat.lng, e.lngLat.lat)
   }, [onMapClick])
 
-  // Fetch true geometry and route data
+  // Fetch true geometry from backend OSRM cache (same path B01 follows)
   useEffect(() => {
     async function fetchRouteData() {
       try {
-        const routeRes = await fetch("/api/routes/R01")
-        
+        const [routeRes, geomRes] = await Promise.all([
+          fetch("/api/routes/R01"),
+          fetch("/api/routes/R01/geometry"),
+        ])
+
         if (routeRes.ok) {
           const routeData: RouteResponse = await routeRes.json()
           if (routeData.stops && routeData.stops.length > 0) {
-            const sortedStops = routeData.stops.sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+            const sortedStops = [...routeData.stops].sort((a, b) => a.sequenceOrder - b.sequenceOrder)
             setStops(sortedStops)
-            
-            // Keep the ordered stops as future OSRM waypoints for sanitized Phase 3B data.
-            const source = sortedStops[0]
-            const dest = sortedStops[sortedStops.length - 1]
-            setSourceAndDest({ source, dest })
+            setSourceAndDest({
+              source: sortedStops[0],
+              dest: sortedStops[sortedStops.length - 1],
+            })
+          }
+        }
 
-            const waypointCoordinates = sortedStops
-              .map((stop) => `${stop.longitude},${stop.latitude}`)
-              .join(";")
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${waypointCoordinates}?overview=full&geometries=geojson&steps=false`
-            const osrmRes = await fetch(osrmUrl)
-            if (!osrmRes.ok) {
-              throw new Error(`OSRM route request failed: ${osrmRes.status}`)
-            }
-
-            const osrmData = await osrmRes.json()
-            const geometry = osrmData.routes?.[0]?.geometry
-            if (geometry?.type === "LineString" && geometry.coordinates.length > 1) {
-              setRouteGeoJSON({
-                type: "Feature",
-                properties: {},
-                geometry,
-              })
-            }
+        if (geomRes.ok) {
+          const geomPayload = await geomRes.json()
+          const geometry = geomPayload.geometry
+          if (geometry?.type === "LineString" && geometry.coordinates?.length > 1) {
+            setRouteGeoJSON({
+              type: "Feature",
+              properties: {},
+              geometry,
+            })
           }
         }
       } catch (err) {
@@ -167,7 +162,7 @@ export default function LiveMap({
         setIsLoading(false)
       }
     }
-    
+
     fetchRouteData()
   }, [])
 
@@ -296,26 +291,39 @@ export default function LiveMap({
             )
           })}
 
-          {/* Live bus marker */}
+          {/* Live bus marker — transparent overhead asset, front = UP */}
           {busData && (
-            <Marker longitude={busData.longitude} latitude={busData.latitude}>
-              <div className="relative flex flex-col items-center justify-center cursor-pointer group">
-                <div className="absolute -top-8 whitespace-nowrap rounded-full px-2.5 py-0.5 border border-stone-subtle shadow-md flex items-center gap-1.5 z-20 bg-white/95">
+            <Marker longitude={busData.longitude} latitude={busData.latitude} anchor="center">
+              <div className="relative flex flex-col items-center justify-center cursor-pointer pointer-events-none">
+                <div className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-0.5 border border-stone-subtle shadow-md flex items-center gap-1.5 z-20 bg-white/95">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[11px] font-bold text-espresso tracking-wide">Bus B01</span>
                   <span className="text-[10px] font-mono text-terracotta font-bold">{busData.speed_kmh.toFixed(0)} km/h</span>
                 </div>
 
                 <div
-                  className="relative w-16 h-16 flex items-center justify-center z-10 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${busData.bearing}deg)` }}
+                  className="relative z-10 transition-transform duration-200 ease-out"
+                  style={{
+                    width: 44,
+                    height: 96,
+                    transform: `rotate(${busData.bearing}deg)`,
+                    transformOrigin: "center center",
+                  }}
                 >
                   <Image
-                    src="/assets/campusride-bus.png"
-                    alt="Live Bus"
-                    fill
-                    style={{ objectFit: "contain" }}
-                    className="transform -rotate-90 drop-shadow-md"
+                    src="/assets/bus-topview.png"
+                    alt="Bus B01"
+                    width={44}
+                    height={96}
+                    priority
+                    unoptimized
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      background: "transparent",
+                    }}
+                    className="drop-shadow-md"
                   />
                 </div>
               </div>

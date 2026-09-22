@@ -14,6 +14,7 @@ export interface StopInfo {
   longitude: number;
   sequenceOrder: number;
   arrivalOffsetMinutes: number | null;
+  liveEtaMinutes?: number | null;
 }
 
 export interface Route {
@@ -58,7 +59,8 @@ export const api = {
     pickupLongitude?: number,
     driverId?: string,
     assignedBusId?: string,
-    assignedRouteId?: string
+    assignedRouteId?: string,
+    assignedStopId?: string
   ): Promise<{
     token: string;
     email: string;
@@ -76,7 +78,7 @@ export const api = {
       body: JSON.stringify({
         role, name, email, password,
         campus, pickupLatitude, pickupLongitude,
-        driverId, assignedBusId, assignedRouteId
+        driverId, assignedBusId, assignedRouteId, assignedStopId
       })
     });
     if (!res.ok) {
@@ -93,13 +95,10 @@ export const api = {
   },
 
   getRoutes: async (): Promise<Route[]> => {
-    try {
-      const res = await fetch(`${API_BASE}/routes`);
-      if (!res.ok) throw new Error("Failed to fetch routes");
-      return res.json();
-    } catch {
-      return [];
-    }
+    const res = await fetch(`${API_BASE}/routes`);
+    if (!res.ok) throw new Error("Failed to fetch routes");
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
   getBuses: async (): Promise<Bus[]> => {
@@ -130,5 +129,23 @@ export const api = {
     } catch {
       return null;
     }
-  }
+  },
+
+  simulateB01: async (reverse = false): Promise<{ ok: boolean; delayMinutes?: number; message?: string }> => {
+    const res = await fetch(`${API_BASE}/buses/B01/simulate?reverse=${reverse}`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to start B01 simulation");
+    return res.json();
+  },
+
+  getAlerts: async (): Promise<Array<{ id: number; busId: string; type: string; status: string; message: string; timestamp: string }>> => {
+    try {
+      const res = await fetch(`${API_BASE}/alerts`);
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
+  },
 };

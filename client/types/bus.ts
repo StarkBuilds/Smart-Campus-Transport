@@ -47,6 +47,7 @@ export interface BusStopSummary {
   longitude: number
   sequenceOrder: number
   arrivalOffsetMinutes: number | null
+  liveEtaMinutes?: number | null
 }
 
 // A bus stop on campus
