@@ -19,9 +19,15 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { isConnected } = useBusSocket()
+
+  const isLiveMap = pathname === "/dashboard"
+
+  const [userName, setUserName] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Track scroll position
   useEffect(() => {
@@ -68,7 +74,10 @@ export default function Navbar() {
                 </span>
               </div>
             </div>
+            <span className="font-serif italic text-2xl sm:text-3xl font-semibold tracking-tight text-espresso group-hover:text-terracotta transition-colors">CampusRide</span>
+            <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-stone-text pl-3 border-l border-stone-subtle hidden sm:inline-block">Student Live Map</span>
           </Link>
+        </div>
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-1">
@@ -117,10 +126,10 @@ export default function Navbar() {
             className="lg:hidden p-2 rounded-xl text-[#292524] hover:bg-[#EFECE6] border border-[#DDD7CB] transition-colors"
             aria-label="Toggle navigation menu"
           >
-            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <span className="material-symbols-outlined">{isMobileMenuOpen ? "close" : "menu"}</span>
           </button>
         </div>
-      </motion.nav>
+      </div>
 
       {/* Mobile Drawer Menu */}
       <AnimatePresence>
@@ -158,11 +167,11 @@ export default function Navbar() {
                 >
                   Open Live Radar Map
                 </Link>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
   )
 }

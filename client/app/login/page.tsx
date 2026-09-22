@@ -13,13 +13,15 @@ import { toast } from "sonner"
 
 type Role = "student" | "driver" | "admin"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const [role, setRole] = useState<Role>("student")
+  const searchParams = useSearchParams()
+  const targetRole = searchParams?.get("role") || "student"
+  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,6 +44,10 @@ export default function LoginPage() {
     } else {
       router.push("/dashboard")
     }
+  }
+
+  const handleSSOClick = () => {
+    setError("Campus SSO Integration is not configured for this environment.")
   }
 
   return (
@@ -67,6 +73,9 @@ export default function LoginPage() {
               <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono mt-0.5">STCET Live Fleet</span>
             </div>
           </Link>
+          <span className="text-xs uppercase tracking-widest font-semibold text-stone-text block">
+            {targetRole === 'driver' ? 'Driver Authorization' : 'Student Digital Transit Pass'}
+          </span>
         </div>
 
         {/* Elevated Royal Card */}
@@ -140,6 +149,16 @@ export default function LoginPage() {
                 Forgot password?
               </a>
             </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSSOClick}
+            className="w-full py-3.5 rounded-xl bg-white border border-stone-subtle hover:bg-parchment text-espresso text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <span>Sign in with Campus SSO (Not Configured)</span>
+          </button>
+        </div>
 
             <button
               type="submit"
