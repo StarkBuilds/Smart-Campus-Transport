@@ -122,10 +122,16 @@ function LoginForm() {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-stone-subtle"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-parchment-warm text-stone-text">Or continue with</span>
-            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSSOClick}
+            className="w-full py-3.5 rounded-xl bg-white border border-stone-subtle hover:bg-parchment text-espresso text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <span>Sign in with Campus SSO (Not Configured)</span>
+          </button>
+        </div>
 
           <button
             type="button"

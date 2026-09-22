@@ -29,19 +29,6 @@ export default function TransitSmartCard({
   const [prevEta, setPrevEta] = useState(dynamicEta)
   const [etaStatus, setEtaStatus] = useState<"stable" | "delayed" | "early">("stable")
 
-  useEffect(() => {
-    if (dynamicEta > prevEta) {
-      setEtaStatus("delayed")
-    } else if (dynamicEta < prevEta) {
-      setEtaStatus("early")
-    } else if (predictedDelay > 0) {
-      setEtaStatus("delayed")
-    } else {
-      setEtaStatus("stable")
-    }
-    setPrevEta(dynamicEta)
-  }, [dynamicEta, predictedDelay, prevEta])
-
   // 3D Tilt calculation
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const tiltNode = tiltRef.current

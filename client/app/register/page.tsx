@@ -18,6 +18,17 @@ const ROUTES = [
   { id: "R02", name: "R02 Local" }
 ]
 
+const CAMPUSES = [
+  "St. Thomas' College of Engineering and Technology",
+  "Alipore Campus",
+  "Main Campus"
+]
+
+const ROUTES = [
+  { id: "R01", name: "R01 Express" },
+  { id: "R02", name: "R02 Local" }
+]
+
 const BUSES = [
   { id: "B01", name: "Bus B01 (WB-11-2023)" },
   { id: "B02", name: "Bus B02 (WB-12-2024)" }
