@@ -1,169 +1,162 @@
 "use client"
 
-// Login page — two tabs: Student and Driver
-// Stores role in localStorage so the dashboard knows which view to show
-// When backend auth is ready, swap localStorage with a real JWT call
-
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { Bus, Eye, EyeOff, GraduationCap, Truck } from "lucide-react"
-import { toast } from "sonner"
+import { useRouter, useSearchParams } from "next/navigation"
+import { api } from "@/services/api"
 
-type Role = "student" | "driver"
-
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const [role, setRole] = useState<Role>("student")
+  const searchParams = useSearchParams()
+  const targetRole = searchParams?.get("role") || "student"
+  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
 
-    // Simulate an API call — replace with real auth when backend is ready
-    await new Promise((r) => setTimeout(r, 1200))
+    try {
+      const data = await api.login(email, password)
+      
+      // Store token securely (localStorage for MVP)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("user_email", data.email)
+        localStorage.setItem("user_name", data.email.split('@')[0])
+        localStorage.setItem("user_role", data.role)
+      }
 
-    // Store the role so the dashboard knows what to show
-    localStorage.setItem("user_role", role)
-    localStorage.setItem("user_email", email)
-
-    toast.success(`Welcome back! Logging you in as ${role}...`)
-
-    // Drivers go to driver dashboard, students to regular dashboard
-    if (role === "driver") {
-      router.push("/driver")
-    } else {
-      router.push("/dashboard")
+      // Route strictly to the appropriate dashboard
+      if (data.role === "ADMIN" || data.role === "DISPATCH") {
+        router.push("/dashboard") // or /analytics
+      } else if (data.role === "DRIVER") {
+        router.push("/dashboard") // or /driver
+      } else {
+        router.push("/dashboard") // student map
+      }
+    } catch (err) {
+      setError("Authentication failed. Please check your credentials.")
+    } finally {
+      setLoading(false)
     }
   }
 
+  const handleSSOClick = () => {
+    setError("Campus SSO Integration is not configured for this environment.")
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 relative overflow-hidden">
-      {/* Background orbs */}
-      <div className="orb w-[500px] h-[500px] -top-40 -left-40 bg-cyan-500/8 animate-[orb-drift-1_12s_ease-in-out_infinite]" />
-      <div className="orb w-[400px] h-[400px] -bottom-20 -right-20 bg-violet-600/8 animate-[orb-drift-2_15s_ease-in-out_infinite]" />
-
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(0,200,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center glow-cyan">
-              <Bus className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">CampusRide</span>
+    <main className="min-h-screen flex items-center justify-center bg-background px-6">
+      <div className="w-full max-w-md bg-parchment-warm border border-stone-subtle rounded-3xl p-8 sm:p-10 shadow-xs">
+        <div className="flex flex-col items-center justify-center mb-8 text-center">
+          <Link href="/" className="inline-flex items-center gap-2 text-espresso hover:text-terracotta transition-colors mb-2">
+            <span className="font-serif italic text-3xl font-semibold tracking-tight">CampusRide</span>
           </Link>
+          <span className="text-xs uppercase tracking-widest font-semibold text-stone-text block">
+            {targetRole === 'driver' ? 'Driver Authorization' : 'Student Digital Transit Pass'}
+          </span>
         </div>
 
-        <div className="glass-strong rounded-2xl border border-white/5 p-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mb-7">Sign in to track your bus</p>
+        {error && (
+          <div className="mb-6 p-4 bg-terracotta-soft text-terracotta-dark text-sm rounded-xl font-medium text-center border border-terracotta/20">
+            {error}
+          </div>
+        )}
 
-          {/* Role selector tabs */}
-          <div className="flex gap-2 p-1 rounded-xl bg-white/5 mb-7">
-            {(["student", "driver"] as Role[]).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  role === r
-                    ? "bg-cyan-400 text-[#060B18]"
-                    : "text-muted-foreground hover:text-white"
-                }`}
-              >
-                {r === "student" ? <GraduationCap className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
-                {r.charAt(0).toUpperCase() + r.slice(1)}
-              </button>
-            ))}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-espresso">Campus Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="student@stcet.ac.in"
+              required
+              className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base placeholder:text-stone-medium focus:outline-none focus:border-terracotta focus:ring-1 focus:ring-terracotta transition-all shadow-sm"
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">
-                {role === "student" ? "College Email" : "Driver ID / Email"}
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === "student" ? "you@stcet.ac.in" : "driver@stcet.ac.in"}
-                required
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
-              />
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-espresso">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="px-4 py-3 rounded-xl bg-parchment border border-stone-subtle text-espresso text-base placeholder:text-stone-medium focus:outline-none focus:border-terracotta focus:ring-1 focus:ring-terracotta transition-all shadow-sm"
+            />
+          </div>
+
+          <div className="flex items-center justify-between mt-1">
+            <label className="flex items-center gap-2 text-sm text-stone-text cursor-pointer">
+              <input type="checkbox" className="rounded-sm border-stone-subtle text-terracotta focus:ring-terracotta" />
+              Keep me signed in
+            </label>
+            <a href="#reset" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">
+              Reset Password
+            </a>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 w-full py-3.5 rounded-xl bg-espresso hover:bg-stone-dark text-parchment text-sm font-semibold tracking-wide transition-all shadow-sm disabled:opacity-70 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+            ) : (
+              <span className="material-symbols-outlined text-sm">vpn_key</span>
+            )}
+            <span>{loading ? "Sign In" : "Sign In"}</span>
+          </button>
+        </form>
+
+        <div className="mt-8 flex flex-col gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone-subtle"></div>
             </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Password</label>
-              <div className="relative">
-                <input
-                  type={showPass ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-4 py-3 pr-11 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-parchment-warm text-stone-text">Or continue with</span>
             </div>
+          </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" className="rounded" />
-                Remember me
-              </label>
-              <a href="#" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
-                Forgot password?
-              </a>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="py-3.5 bg-cyan-400 text-[#060B18] font-semibold rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {loading ? "Signing in..." : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
-              Create one
-            </Link>
-          </p>
+          <button
+            type="button"
+            onClick={handleSSOClick}
+            className="w-full py-3.5 rounded-xl bg-white border border-stone-subtle hover:bg-parchment text-espresso text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <span>Sign in with Campus SSO (Not Configured)</span>
+          </button>
         </div>
 
-        {/* Back to home */}
-        <p className="text-center text-sm text-muted-foreground mt-5">
-          <Link href="/" className="hover:text-white transition-colors">← Back to home</Link>
-        </p>
-      </motion.div>
-    </div>
+        <div className="mt-8 pt-6 border-t border-stone-subtle text-center flex flex-col gap-2">
+          <p className="text-sm text-stone-text">
+            Don't have an account?{' '}
+            <Link href="/register" className="font-semibold text-terracotta hover:text-terracotta-dark">
+              Register here
+            </Link>
+          </p>
+          <p className="text-xs text-stone-text mt-2">
+            For access issues, contact the <a href="#" className="font-semibold text-terracotta hover:text-terracotta-dark">IT Transport Desk</a>.
+          </p>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background px-6"><span className="material-symbols-outlined animate-spin text-4xl text-stone-medium">sync</span></div>}>
+      <LoginForm />
+    </Suspense>
   )
 }
