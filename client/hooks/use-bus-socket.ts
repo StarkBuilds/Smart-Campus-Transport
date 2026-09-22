@@ -1,13 +1,11 @@
 "use client"
 
 // useBusSocket — hook that manages the live bus data feed
-// Currently uses mock data with setInterval to simulate GPS updates
-// When the backend WebSocket is ready, just swap the mock section
-// with a real WebSocket connection — the rest of the code stays identical
+// Connects to the real backend API as the single source of truth
+// and provides smooth transition interpolation for the frontend.
 
 import { useState, useEffect, useRef } from "react"
 import type { LiveBusData } from "@/types/bus"
-import { getInterpolatedBusEvent } from "@/lib/mock-data"
 
 interface UseBusSocketResult {
   busData: LiveBusData | null
@@ -19,76 +17,122 @@ export function useBusSocket(): UseBusSocketResult {
   const [busData, setBusData] = useState<LiveBusData | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [waypointIndex, setWaypointIndex] = useState(0)
-  const wsRef = useRef<WebSocket | null>(null)
+  
+  const targetDataRef = useRef<LiveBusData | null>(null)
+  const currentDataRef = useRef<LiveBusData | null>(null)
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL
+    let isDisposed = false
+    let animId: number
 
-    if (wsUrl) {
-      // ─── REAL WEBSOCKET (when backend is ready) ───────────────────
+    // Poll the real backend state
+    const pollBackend = async () => {
       try {
-        const ws = new WebSocket(wsUrl)
-        wsRef.current = ws
+        const [busRes, predRes] = await Promise.allSettled([
+          fetch("/api/buses/B01"),
+          fetch("/api/buses/B01/prediction")
+        ])
 
-        ws.onopen = () => {
+        if (busRes.status === "fulfilled" && busRes.value.ok) {
+          const data = await busRes.value.json()
           setIsConnected(true)
-          console.log("WebSocket connected to", wsUrl)
-        }
 
-        ws.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data) as LiveBusData
-            setBusData(payload)
-          } catch {
-            console.warn("Failed to parse WebSocket message:", event.data)
+          let mlConfidence: number | undefined = undefined;
+          let predictedDelay: number | undefined = undefined;
+
+          if (predRes.status === "fulfilled" && predRes.value.ok) {
+            const predData = await predRes.value.json()
+            if (predData.confidence !== undefined && predData.confidence !== null) {
+               mlConfidence = predData.confidence;
+            }
+            if (predData.predictedDelayMinutes !== undefined && predData.predictedDelayMinutes !== null) {
+               predictedDelay = predData.predictedDelayMinutes;
+            }
           }
-        }
 
-        ws.onerror = () => {
-          console.warn("WebSocket error — falling back to mock data")
-          return startMockFeed()
-        }
+          const newTarget: LiveBusData = {
+            bus_id: data.busId || "B01",
+            route_id: data.routeId || "R01",
+            trip_id: data.currentTripId || "",
+            timestamp: data.latestTimestamp || new Date().toISOString(),
+            latitude: data.latestLatitude || 22.4988,
+            longitude: data.latestLongitude || 88.3245,
+            bearing: data.bearing || 0,
+            speed_kmh: data.latestSpeedKmh || 0,
+            accuracy_m: 5,
+            status: data.status || "IN_SERVICE",
+            next_stop_id: data.nextStop?.stopId || "",
+            delay_minutes: data.delayMinutes ?? 0,
+            eta_minutes: data.etaMinutes ?? 0,
+            current_stop: data.currentStop,
+            next_stop: data.nextStop,
+            upcoming_stops: data.upcomingStops ?? [],
+            features: {
+               predicted_delay_minutes: predictedDelay ?? 0,
+               ml_confidence: mlConfidence,
+               is_morning_rush: false,
+               distance_from_last_ping_meters: 0,
+               calculated_velocity_mps: data.latestSpeedKmh ? data.latestSpeedKmh / 3.6 : 0
+            }
+          }
 
-        ws.onclose = () => {
-          setIsConnected(false)
+          if (!currentDataRef.current) {
+            currentDataRef.current = { ...newTarget }
+          }
+          targetDataRef.current = newTarget
         }
-
-        return () => ws.close()
-      } catch {
-        // If WebSocket fails to connect, fall through to mock
-        return startMockFeed()
+      } catch (err) {
+        setIsConnected(false)
+        console.warn("Polling error:", err)
       }
-    } else {
-      // ─── MOCK DATA (continuous smooth simulation matching Homepage) ──
-      return startMockFeed()
     }
 
-    function startMockFeed() {
-      setIsConnected(true)
+    // Attempt to connect/poll every 2 seconds
+    pollBackend()
+    const pollInterval = setInterval(pollBackend, 2000)
 
-      const cycleDuration = 72000 // 72-second graceful cruising loop matching realistic city pace
-      let animId: number
-      let lastTime = 0
-
-      // Emit initial event immediately
-      const initialT = (Date.now() % cycleDuration) / cycleDuration
-      setBusData(getInterpolatedBusEvent(initialT, 3))
-
-      const loop = () => {
-        const now = Date.now()
-        // Update at ~30fps for silky smooth Swiggy/Zomato style continuous movement
-        if (now - lastTime >= 32) {
-          const t = (now % cycleDuration) / cycleDuration
-          const event = getInterpolatedBusEvent(t, 3)
-          setBusData(event)
-          setWaypointIndex(Math.floor(t * 16))
-          lastTime = now
-        }
-        animId = requestAnimationFrame(loop)
+    // Interpolation loop
+    const loop = () => {
+      if (isDisposed) return
+      
+      const target = targetDataRef.current
+      let current = currentDataRef.current
+      
+      if (target && current) {
+        // Linearly ease lat/lng and speed so marker moves smoothly
+        const ease = 0.1
+        current.latitude += (target.latitude - current.latitude) * ease
+        current.longitude += (target.longitude - current.longitude) * ease
+        current.speed_kmh += (target.speed_kmh - current.speed_kmh) * ease
+        
+        // Ensure shortest path for bearing rotation
+        let diff = target.bearing - current.bearing
+        while (diff < -180) diff += 360
+        while (diff > 180) diff -= 360
+        current.bearing += diff * ease
+        
+        // Copy other state discretely
+        current.bus_id = target.bus_id
+        current.next_stop_id = target.next_stop_id
+        current.status = target.status
+        current.eta_minutes = target.eta_minutes
+        current.delay_minutes = target.delay_minutes
+        current.current_stop = target.current_stop
+        current.next_stop = target.next_stop
+        current.upcoming_stops = target.upcoming_stops
+        
+        setBusData({ ...current })
       }
-
+      
       animId = requestAnimationFrame(loop)
-      return () => cancelAnimationFrame(animId)
+    }
+
+    animId = requestAnimationFrame(loop)
+
+    return () => {
+      isDisposed = true
+      clearInterval(pollInterval)
+      cancelAnimationFrame(animId)
     }
   }, [])
 

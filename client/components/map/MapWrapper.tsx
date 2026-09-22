@@ -23,22 +23,19 @@ const LiveMap = dynamic(() => import("@/components/map/LiveMap"), {
 interface MapWrapperProps {
   busData: LiveBusData | null
   userRole: "student" | "driver"
-  activeRouteVariant?: "standard" | "traffic_alternate"
-  onToggleRouteVariant?: (variant: "standard" | "traffic_alternate") => void
+  onMapClick?: (longitude: number, latitude: number) => void
 }
 
 export default function MapWrapper({
   busData,
   userRole,
-  activeRouteVariant,
-  onToggleRouteVariant,
+  onMapClick,
 }: MapWrapperProps) {
   return (
     <LiveMap
       busData={busData}
       userRole={userRole}
-      activeRouteVariant={activeRouteVariant}
-      onToggleRouteVariant={onToggleRouteVariant}
+      onMapClick={onMapClick}
     />
   )
 }

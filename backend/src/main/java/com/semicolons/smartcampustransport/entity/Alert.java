@@ -9,7 +9,7 @@ import java.time.Instant;
 @Table(name = "alerts", indexes = {
         @Index(name = "idx_alert_bus_id", columnList = "bus_id"),
         @Index(name = "idx_alert_status", columnList = "status"),
-        @Index(name = "idx_alert_created_at", columnList = "created_at")
+        @Index(name = "idx_alert_timestamp", columnList = "timestamp")
 })
 @Getter
 @Setter

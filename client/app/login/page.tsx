@@ -25,8 +25,9 @@ function LoginForm() {
       
       // Store token securely (localStorage for MVP)
       if (typeof window !== "undefined") {
-        localStorage.setItem("campusride_token", data.token)
+        localStorage.setItem("token", data.token)
         localStorage.setItem("user_email", data.email)
+        localStorage.setItem("user_name", data.email.split('@')[0])
         localStorage.setItem("user_role", data.role)
       }
 
@@ -43,6 +44,10 @@ function LoginForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSSOClick = () => {
+    setError("Campus SSO Integration is not configured for this environment.")
   }
 
   return (
@@ -108,13 +113,38 @@ function LoginForm() {
             ) : (
               <span className="material-symbols-outlined text-sm">vpn_key</span>
             )}
-            <span>{loading ? "Authenticating..." : "Sign in with Campus SSO"}</span>
+            <span>{loading ? "Sign In" : "Sign In"}</span>
           </button>
         </form>
 
-        <div className="mt-8 pt-8 border-t border-stone-subtle text-center">
+        <div className="mt-8 flex flex-col gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone-subtle"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-parchment-warm text-stone-text">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSSOClick}
+            className="w-full py-3.5 rounded-xl bg-white border border-stone-subtle hover:bg-parchment text-espresso text-sm font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <span>Sign in with Campus SSO (Not Configured)</span>
+          </button>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-stone-subtle text-center flex flex-col gap-2">
           <p className="text-sm text-stone-text">
-            For access issues, contact the <a href="#" className="font-semibold text-terracotta">IT Transport Desk</a>.
+            Don't have an account?{' '}
+            <Link href="/register" className="font-semibold text-terracotta hover:text-terracotta-dark">
+              Register here
+            </Link>
+          </p>
+          <p className="text-xs text-stone-text mt-2">
+            For access issues, contact the <a href="#" className="font-semibold text-terracotta hover:text-terracotta-dark">IT Transport Desk</a>.
           </p>
         </div>
       </div>

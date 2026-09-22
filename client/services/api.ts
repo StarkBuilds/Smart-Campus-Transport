@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+const API_BASE = typeof window !== 'undefined' ? '/api' : 'http://127.0.0.1:8080/api';
 
 export interface Bus {
   busId: string;
@@ -38,20 +38,60 @@ export interface Prediction {
 }
 
 export const api = {
-  login: async (email: string, password: string): Promise<{token: string; email: string; role: string}> => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-      if (!res.ok) throw new Error("Auth failed");
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      throw err;
-    }
+  login: async (email: string, password: string): Promise<{token: string; email: string; role: string; name: string}> => {
+    const res = await fetch(`${API_BASE}/auth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) throw new Error("Auth failed");
+    return await res.json();
   },
+  
+  register: async (
+    role: string,
+    name: string,
+    email: string,
+    password?: string,
+    campus?: string,
+    pickupLatitude?: number,
+    pickupLongitude?: number,
+    driverId?: string,
+    assignedBusId?: string,
+    assignedRouteId?: string
+  ): Promise<{
+    token: string;
+    email: string;
+    role: string;
+    name: string;
+    message: string;
+    assignedRouteId?: string;
+    assignedStopId?: string;
+    assignedRouteName?: string;
+    assignedStopName?: string;
+  }> => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role, name, email, password,
+        campus, pickupLatitude, pickupLongitude,
+        driverId, assignedBusId, assignedRouteId
+      })
+    });
+    if (!res.ok) {
+      let errorMsg = "Registration failed";
+      try {
+        const errorData = await res.json();
+        errorMsg = errorData.message || errorMsg;
+      } catch {
+        // Ignore JSON parsing failure
+      }
+      throw new Error(errorMsg);
+    }
+    return await res.json();
+  },
+
   getRoutes: async (): Promise<Route[]> => {
     try {
       const res = await fetch(`${API_BASE}/routes`);

@@ -15,30 +15,32 @@ import MapWrapper from "@/components/map/MapWrapper"
 import RouteInspector from "@/components/landing/RouteInspector"
 import TransitSmartCard from "@/components/landing/TransitSmartCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
-import { BUS_STOPS } from "@/lib/constants"
-import { toIST } from "@/lib/mock-data"
+import { toIST } from "@/lib/formatting"
 import type { BusStop } from "@/types/bus"
 
 export default function StudentDashboard() {
   const router = useRouter()
   const { busData, isConnected } = useBusSocket()
-  const [userName, setUserName] = useState("Sohom Giri")
-  const [userStop, setUserStop] = useState<BusStop | null>(null)
+  const [userName, setUserName] = useState("Student")
   const [alertFired, setAlertFired] = useState(false)
   const [showPassModal, setShowPassModal] = useState(false)
   const [showRoutesModal, setShowRoutesModal] = useState(false)
   const [showAlertsModal, setShowAlertsModal] = useState(false)
   const [mobileTab, setMobileTab] = useState<"map" | "routes" | "alerts" | "pass">("map")
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [route, setRoute] = useState<{name: string; description: string; stops: BusStop[]}>({name: "Route", description: "", stops: []})
+
+  useEffect(() => {
+    fetch("/api/routes/R01").then(r => r.json()).then(setRoute).catch(()=>{})
+  }, [])
 
   // Load user info from localStorage
   useEffect(() => {
-    const name = localStorage.getItem("user_name") || "Sohom Giri"
+    const name = localStorage.getItem("user_name") || "Student"
     const stopId = localStorage.getItem("user_stop")
     setUserName(name)
     if (stopId) {
-      const stop = BUS_STOPS.find((s) => s.stop_id === stopId)
-      if (stop) setUserStop(stop)
+      void stopId
     }
   }, [])
 
@@ -59,6 +61,18 @@ export default function StudentDashboard() {
     }
   }, [busData?.eta_minutes, alertFired])
 
+  const notifiedDelayRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!busData) return
+    const delay = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0)
+    if (Math.abs(delay) < 1 || notifiedDelayRef.current === delay) return
+    notifiedDelayRef.current = delay
+    const message = delay > 0
+      ? `Bus B01 is running ${delay} minute${delay === 1 ? "" : "s"} late.`
+      : `Bus B01 is approximately ${Math.abs(delay)} minute${Math.abs(delay) === 1 ? "" : "s"} early.`
+    toast.warning(message, { duration: 7000 })
+  }, [busData?.delay_minutes, busData?.features?.predicted_delay_minutes])
+
   // Request browser notification permission on mount
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
@@ -73,87 +87,22 @@ export default function StudentDashboard() {
 
   // Derive delay status
   const getDelayStatus = () => {
-    if (!busData) return { label: "On Time ✓", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
-    const d = busData.delay_minutes
-    if (d <= 2)  return { label: "On Time ✓",      color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
-    if (d <= 10) return { label: `+${d} min delay`, color: "text-amber-800 bg-amber-50 border-amber-200" }
-    return              { label: `+${d} min late`,  color: "text-red-700 bg-red-50 border-red-200" }
+    if (!busData) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
+    const d = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0);
+    if (Math.abs(d) < 1) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
+    if (d > 0) return { label: `DELAYED · +${d} min`, color: "text-amber-800 bg-amber-50 border-amber-200" }
+    return { label: `EARLY · ${Math.abs(d)} min`, color: "text-sky-700 bg-sky-50 border-sky-200" }
   }
 
   const delayStatus = getDelayStatus()
-  const nextStop = BUS_STOPS.find((s) => s.stop_id === busData?.next_stop_id) ?? BUS_STOPS[1]
-  
-  const mlConfidence = busData?.features?.ml_confidence
-    ? Math.round(busData.features.ml_confidence * 100)
-    : 87
-    
-  const predictedDelay = busData?.features?.predicted_delay_minutes ?? 3
+  const nextStop = busData?.next_stop ?? { name: "Loading route stop" }
+  const dynamicEta = busData?.eta_minutes ?? 0
+  const predictedDelay = Math.round(busData?.features?.predicted_delay_minutes ?? busData?.delay_minutes ?? 0)
 
   return (
     <div className="h-[100svh] w-full flex flex-col bg-parchment text-espresso overflow-hidden font-sans select-none">
       {/* Top bar — Minimalist Warm Header */}
-      <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 sm:px-6 border-b border-stone-subtle bg-parchment/90 backdrop-blur-md z-30">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-espresso text-parchment flex items-center justify-center font-serif font-bold text-base shadow-xs">
-              CR
-            </div>
-            <div>
-              <span className="text-sm font-bold text-espresso tracking-tight">CampusRide</span>
-              <span className="text-xs text-stone-text ml-2 font-medium hidden sm:inline">Student Live Map</span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Connection status */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-stone-subtle shadow-2xs">
-            {isConnected
-              ? <Wifi className="w-3.5 h-3.5 text-sage" />
-              : <WifiOff className="w-3.5 h-3.5 text-red-500" />
-            }
-            <span className="text-[11px] text-stone-dark font-medium hidden sm:block">
-              {isConnected ? "Live Telemetry (15s)" : "Offline"}
-            </span>
-          </div>
-
-          {/* SOHOM GIRI Pass Trigger */}
-          <button
-            type="button"
-            onClick={() => setShowPassModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-parchment-warm border border-stone-subtle transition-all shadow-2xs group text-left cursor-pointer active:scale-95"
-            title="Inspect 3D Student Smart Pass"
-          >
-            <div className="w-6 h-6 rounded-lg bg-terracotta text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <CreditCard className="w-3 h-3" />
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-xs font-bold text-espresso tracking-tight">
-                {userName}
-              </span>
-            </div>
-          </button>
-
-          {/* Admin link */}
-          <Link
-            href="/analytics"
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-espresso bg-white hover:bg-parchment-warm border border-stone-subtle transition-all shadow-2xs"
-            title="Institutional Transit Analytics"
-          >
-            <Layers className="w-3.5 h-3.5 text-terracotta" />
-            <span>Admin</span>
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs text-stone-text hover:text-espresso border border-stone-subtle hover:bg-parchment-warm transition-all flex items-center gap-1.5"
-            title="Sign Out"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
-        </div>
-      </header>
+      
 
       {/* Main Full-Screen Map Container */}
       <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -169,7 +118,7 @@ export default function StudentDashboard() {
         ════════════════════════════════════════════════════════════════════ */}
         
         {/* Desktop Left: Floating Translucent Glass ETA Card */}
-        <div className="hidden lg:flex flex-col gap-3 absolute top-6 left-6 z-20 w-84 max-h-[calc(100vh-7rem)] pointer-events-auto">
+        <div className="hidden lg:flex flex-col gap-3 absolute bottom-8 left-8 z-20 w-84 max-h-[calc(100vh-7rem)] pointer-events-auto">
           {/* Main ETA Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -184,8 +133,8 @@ export default function StudentDashboard() {
                   B01
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-espresso">Route R01 Express</h2>
-                  <p className="text-[11px] text-stone-text">Tollygunge ➔ STCET Campus</p>
+                  <h2 className="text-sm font-bold text-espresso">{route.name || "Route R01"}</h2>
+                  <p className="text-[11px] text-stone-text">{route.stops[0]?.name || "Source"} ➔ {route.stops.at(-1)?.name || "Destination"}</p>
                 </div>
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${delayStatus.color}`}>
@@ -198,13 +147,22 @@ export default function StudentDashboard() {
               <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Estimated Arrival</span>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-4xl font-extrabold text-espresso font-serif">
-                  {busData?.eta_minutes ?? "28"}
+                  {dynamicEta || "--"}
                 </span>
                 <span className="text-sm font-semibold text-stone-text">minutes away</span>
               </div>
               <div className="flex items-center gap-1.5 mt-2 text-xs text-espresso font-medium bg-parchment-warm p-2 rounded-lg border border-stone-subtle">
                 <MapPin className="w-3.5 h-3.5 text-terracotta shrink-0" />
                 <span>Next stop: <strong className="text-espresso">{nextStop.name}</strong></span>
+              </div>
+              <div className="mt-2 space-y-1 text-[11px] text-stone-text">
+                <span className="font-bold uppercase tracking-wider">Upcoming stops</span>
+                {(busData?.upcoming_stops ?? []).slice(0, 5).map((stop) => (
+                  <div key={stop.stopId} className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-terracotta" />
+                    <span>{stop.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -217,9 +175,9 @@ export default function StudentDashboard() {
                 </p>
               </div>
               <div className="bg-white/80 p-2.5 rounded-xl border border-stone-subtle">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">ML Confidence</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Transport Status</span>
                 <p className="text-sm font-bold text-sage font-mono mt-0.5">
-                  {mlConfidence}%
+                  {delayStatus.label}
                 </p>
               </div>
             </div>
@@ -330,7 +288,7 @@ export default function StudentDashboard() {
                     <div>
                       <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Arriving In</span>
                       <p className="text-3xl font-extrabold text-espresso font-serif">
-                        {busData?.eta_minutes ?? "28"} <span className="text-xs font-normal text-stone-text font-sans">min</span>
+                        {dynamicEta} <span className="text-xs font-normal text-stone-text font-sans">min</span>
                       </p>
                     </div>
                     <div className="text-right">
@@ -341,7 +299,7 @@ export default function StudentDashboard() {
 
                   <div className="flex items-center justify-between text-[11px] pt-2 border-t border-stone-subtle text-stone-text">
                     <span>Speed: <strong>{busData?.speed_kmh?.toFixed(0) ?? "24"} km/h</strong></span>
-                    <span>Confidence: <strong>{mlConfidence}%</strong></span>
+                    <span>Status: <strong>{delayStatus.label}</strong></span>
                   </div>
                 </motion.div>
               )}
@@ -511,7 +469,12 @@ export default function StudentDashboard() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <TransitSmartCard />
+              <TransitSmartCard
+                userName={userName}
+                dynamicEta={dynamicEta}
+                speed={busData?.speed_kmh || 0}
+                predictedDelay={predictedDelay}
+              />
             </motion.div>
           </motion.div>
         )}
@@ -549,7 +512,7 @@ export default function StudentDashboard() {
               </div>
 
               <div className="space-y-4">
-                <RouteInspector isEmbedded={true} />
+                <RouteInspector isEmbedded={true} mlConfidenceStr={delayStatus.label} />
               </div>
             </motion.div>
           </motion.div>
