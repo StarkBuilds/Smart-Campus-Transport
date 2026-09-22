@@ -47,6 +47,73 @@ function getNextStop(waypointIndex: number): string {
   return "STOP-CAMPUS"
 }
 
+// Precompute cumulative segment distances along routeWaypoints for fluid interpolation
+const segmentLengths: number[] = []
+let totalRouteDistance = 0
+for (let i = 0; i < routeWaypoints.length - 1; i++) {
+  const d = Math.hypot(
+    routeWaypoints[i + 1][0] - routeWaypoints[i][0],
+    routeWaypoints[i + 1][1] - routeWaypoints[i][1]
+  )
+  segmentLengths.push(d)
+  totalRouteDistance += d
+}
+
+// Continuous smooth bus position interpolation (matching Homepage Wayfinding Radar)
+export function getInterpolatedBusEvent(progress: number, delayMinutes = 3): LiveBusData {
+  const t = Math.max(0, Math.min(1, progress))
+  const targetDist = t * totalRouteDistance
+
+  let accumulated = 0
+  let segIndex = 0
+  let segFraction = 0
+
+  for (let i = 0; i < segmentLengths.length; i++) {
+    const len = segmentLengths[i]
+    if (accumulated + len >= targetDist || i === segmentLengths.length - 1) {
+      segIndex = i
+      segFraction = len > 0 ? (targetDist - accumulated) / len : 0
+      break
+    }
+    accumulated += len
+  }
+
+  const p1 = routeWaypoints[segIndex]
+  const p2 = routeWaypoints[segIndex + 1] || p1
+
+  const currentLng = p1[0] + segFraction * (p2[0] - p1[0])
+  const currentLat = p1[1] + segFraction * (p2[1] - p1[1])
+  const bearing = getBearing(p1, p2)
+
+  // Realistic urban speed calculation matching Homepage (24-34 km/h)
+  const speed = 26 + Math.sin(t * Math.PI * 4) * 6
+  const nextStopId = getNextStop(segIndex)
+  const etaMinutes = Math.max(1, Math.ceil((1 - t) * 16))
+
+  return {
+    bus_id: "B01",
+    route_id: "R01",
+    trip_id: `TRIP-STCET-${new Date().toISOString().slice(0, 10)}-0830`,
+    timestamp: new Date().toISOString(),
+    latitude: currentLat,
+    longitude: currentLng,
+    bearing,
+    speed_kmh: parseFloat(speed.toFixed(1)),
+    accuracy_m: 2.8,
+    status: t > 0.85 ? "APPROACHING" : "IN_SERVICE",
+    next_stop_id: nextStopId,
+    delay_minutes: delayMinutes,
+    eta_minutes: etaMinutes,
+    features: {
+      is_morning_rush: true,
+      distance_from_last_ping_meters: speed * (1000 / 3600) * 1.5,
+      calculated_velocity_mps: parseFloat((speed / 3.6).toFixed(2)),
+      predicted_delay_minutes: delayMinutes,
+      ml_confidence: 0.88 + Math.sin(t * Math.PI * 2) * 0.05,
+    },
+  }
+}
+
 // Generates a realistic GPS event for a given position in the route
 export function getMockBusEvent(waypointIndex: number, delayMinutes = 3): LiveBusData {
   const idx = waypointIndex % routeWaypoints.length
@@ -121,21 +188,35 @@ export function getRouteProgress(busLng?: number, busLat?: number) {
     }
   }
 
-  // Find the closest waypoint to current bus location
-  let closestIdx = 0
-  let minDist = Infinity
-  for (let i = 0; i < routeWaypoints.length; i++) {
-    const [wLng, wLat] = routeWaypoints[i]
-    const d = Math.hypot(wLng - busLng, wLat - busLat)
-    if (d < minDist) {
-      minDist = d
-      closestIdx = i
+  // Find the exact active segment [bestSegment, bestSegment+1] the bus is on
+  let bestSegment = 0
+  let bestDist = Infinity
+
+  for (let i = 0; i < routeWaypoints.length - 1; i++) {
+    const p1 = routeWaypoints[i]
+    const p2 = routeWaypoints[i + 1]
+    const dx = p2[0] - p1[0]
+    const dy = p2[1] - p1[1]
+    const l2 = dx * dx + dy * dy
+    let segT = l2 === 0 ? 0 : ((busLng - p1[0]) * dx + (busLat - p1[1]) * dy) / l2
+    segT = Math.max(0, Math.min(1, segT))
+    const projX = p1[0] + segT * dx
+    const projY = p1[1] + segT * dy
+    const d = Math.hypot(busLng - projX, busLat - projY)
+    if (d < bestDist) {
+      bestDist = d
+      bestSegment = i
     }
   }
 
-  // Slice waypoints into traveled vs remaining
-  const traveledCoords = [...routeWaypoints.slice(0, closestIdx + 1), [busLng, busLat] as [number, number]]
-  const remainingCoords = [[busLng, busLat] as [number, number], ...routeWaypoints.slice(closestIdx + 1)]
+  const traveledCoords: [number, number][] = [
+    ...routeWaypoints.slice(0, bestSegment + 1),
+    [busLng, busLat],
+  ]
+  const remainingCoords: [number, number][] = [
+    [busLng, busLat],
+    ...routeWaypoints.slice(bestSegment + 1),
+  ]
 
   return {
     traveledGeoJSON: {
@@ -145,7 +226,10 @@ export function getRouteProgress(busLng?: number, busLat?: number) {
     },
     remainingGeoJSON: {
       type: "Feature" as const,
-      geometry: { type: "LineString" as const, coordinates: remainingCoords.length > 1 ? remainingCoords : [routeWaypoints[routeWaypoints.length - 1]] },
+      geometry: {
+        type: "LineString" as const,
+        coordinates: remainingCoords.length > 1 ? remainingCoords : [routeWaypoints[routeWaypoints.length - 1]],
+      },
       properties: {},
     },
   }

@@ -7,103 +7,56 @@
 // Pulsing sonar rings show live GPS updates in real time
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import Link from "next/link"
 import * as maplibregl from "maplibre-gl"
 import Map, {
   Marker, Source, Layer,
   type MapRef, type LayerProps, type StyleSpecification
 } from "react-map-gl/maplibre"
 import { motion, AnimatePresence } from "framer-motion"
-import { Navigation, Clock, Zap, AlertTriangle, Bus } from "lucide-react"
+import { Navigation, Clock, Zap, AlertTriangle, Bus, Route as RouteIcon, ShieldAlert, Layers, Compass, Maximize2, Minimize2 } from "lucide-react"
 import type { LiveBusData } from "@/types/bus"
 import { BUS_STOPS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "@/lib/constants"
 import { routeGeoJSON, routeWaypoints, getRouteProgress, toIST } from "@/lib/mock-data"
+import { ALTERNATE_TRAFFIC_ROUTE, TRAFFIC_THEME } from "@/lib/traffic-route-data"
 import "maplibre-gl/dist/maplibre-gl.css"
 
-// Crystal-clear dark map style — uses Esri World Dark Gray Canvas with native embedded Route Polyline
-// 100% free, no API key needed, zero watermark, route is guaranteed to render
-const DARK_MAP_STYLE: StyleSpecification = {
+// Crisp Daylight OpenStreetMap & Esri Street style matching Leaflet.js
+// 100% free, zero watermark, zero API key required, natural daylight street-level view of Kolkata
+const DAYLIGHT_OSM_MAP_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    "esri-dark-base": {
+    "daylight-osm-base": {
       type: "raster",
       tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
-      attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
-    },
-    // Full route line embedded directly in the style source
-    "campus-route-source": {
-      type: "geojson",
-      data: routeGeoJSON,
-    },
-    "esri-dark-labels": {
-      type: "raster",
-      tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
-      ],
-      tileSize: 256,
+      attribution: "Leaflet | © Esri, OpenStreetMap contributors",
     },
   },
   layers: [
-    // Base dark map layer (roads, land, water)
     {
-      id: "background",
-      type: "background",
-      paint: { "background-color": "#060B18" },
-    },
-    {
-      id: "esri-base-layer",
+      id: "daylight-osm-layer",
       type: "raster",
-      source: "esri-dark-base",
-    },
-    // The wide neon cyan glow for the campus bus route
-    {
-      id: "campus-route-glow",
-      type: "line",
-      source: "campus-route-source",
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": "#00C8FF",
-        "line-width": 14,
-        "line-opacity": 0.5,
-        "line-blur": 6,
-      },
-    },
-    // The solid Electric Cyan line for the campus bus route
-    {
-      id: "campus-route-line",
-      type: "line",
-      source: "campus-route-source",
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: {
-        "line-color": "#00C8FF",
-        "line-width": 4.5,
-        "line-opacity": 0.95,
-      },
-    },
-    // Reference labels layer on top (street names, districts like Khidderpore, Majerhat)
-    {
-      id: "esri-labels-layer",
-      type: "raster",
-      source: "esri-dark-labels",
+      source: "daylight-osm-base",
     },
   ],
 }
 
-// 1. Traveled path glow — bright Electric Cyan neon bloom
+// 1. Traveled path glow — vibrant Azure Blue halo on daylight OSM tiles
 const traveledGlowLayer: LayerProps = {
   id: "traveled-glow",
   type: "line",
   paint: {
-    "line-color": "#00C8FF",
-    "line-width": 16,
-    "line-opacity": 0.35,
-    "line-blur": 8,
+    "line-color": "#3B82F6",
+    "line-width": 14,
+    "line-opacity": 0.28,
+    "line-blur": 6,
   },
 }
 
-// 2. Traveled path line — solid, intense Electric Cyan
+// 2. Traveled path line — solid, intense Royal Cobalt Blue
 const traveledLineLayer: LayerProps = {
   id: "traveled-line",
   type: "line",
@@ -112,13 +65,13 @@ const traveledLineLayer: LayerProps = {
     "line-join": "round",
   },
   paint: {
-    "line-color": "#00C8FF",
-    "line-width": 4.5,
+    "line-color": "#1D4ED8",
+    "line-width": 5,
     "line-opacity": 0.95,
   },
 }
 
-// 3. Remaining path ahead — dashed, subtle preview leading to campus
+// 3. Remaining path ahead — dashed slate preview leading to STCET campus
 const remainingLineLayer: LayerProps = {
   id: "remaining-line",
   type: "line",
@@ -127,9 +80,9 @@ const remainingLineLayer: LayerProps = {
     "line-join": "round",
   },
   paint: {
-    "line-color": "#818CF8",
+    "line-color": "#475569",
     "line-width": 2.5,
-    "line-opacity": 0.45,
+    "line-opacity": 0.65,
     "line-dasharray": [4, 3],
   },
 }
@@ -138,12 +91,40 @@ interface LiveMapProps {
   busData: LiveBusData | null
   userRole: "student" | "driver"
   onStopClick?: (stopId: string) => void
+  activeRouteVariant?: "standard" | "traffic_alternate"
+  onToggleRouteVariant?: (variant: "standard" | "traffic_alternate") => void
 }
 
-export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps) {
+interface ProjectedSegment {
+  id: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  color: string
+  glow: string
+  status: "green" | "amber" | "red"
+  name?: string
+  speed?: number
+}
+
+export default function LiveMap({
+  busData,
+  userRole,
+  onStopClick,
+  activeRouteVariant,
+  onToggleRouteVariant,
+}: LiveMapProps) {
   const mapRef = useRef<MapRef>(null)
   const [selectedStop, setSelectedStop] = useState<string | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [internalVariant, setInternalVariant] = useState<"standard" | "traffic_alternate">("standard")
+  const currentVariant = activeRouteVariant ?? internalVariant
+
+  const setVariant = (v: "standard" | "traffic_alternate") => {
+    setInternalVariant(v)
+    onToggleRouteVariant?.(v)
+  }
 
   // Fallback: force-show map after 8 seconds even if tiles are slow
   // This way the bus markers and route line still render even without tiles
@@ -176,14 +157,16 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
   // Dynamic route highlighting: compute traveled vs remaining path
   const { traveledGeoJSON, remainingGeoJSON } = getRouteProgress(busData?.longitude, busData?.latitude)
 
-  // Screen-projected SVG route line — converts GPS coordinates directly to container pixels
-  // This guarantees the route is 100% visible regardless of WebGL/shader/tile loading quirks
+  // Screen-projected SVG route lines — converts GPS coordinates directly to container pixels
   const [svgPath, setSvgPath] = useState("")
+  const [altSvgPath, setAltSvgPath] = useState("")
+  const [projectedSegments, setProjectedSegments] = useState<ProjectedSegment[]>([])
 
   const updateSvgPath = useCallback(() => {
     const map = mapRef.current?.getMap()
     if (!map) return
     try {
+      // 1. Project Primary Route
       const pts = routeWaypoints.map(([lng, lat]) => {
         const p = map.project([lng, lat])
         return `${p.x.toFixed(1)},${p.y.toFixed(1)}`
@@ -191,6 +174,42 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
       if (pts.length > 1) {
         setSvgPath(`M ${pts.join(" L ")}`)
       }
+
+      // 2. Project 22 Alternate Traffic Route Segments & Continuous Detour Spine
+      const segs: ProjectedSegment[] = []
+      const altPts: string[] = []
+
+      ALTERNATE_TRAFFIC_ROUTE.features.forEach((feat, i) => {
+        const [c1, c2] = feat.geometry.coordinates
+        if (c1 && c2) {
+          const p1 = map.project(c1)
+          const p2 = map.project(c2)
+
+          if (i === 0) {
+            altPts.push(`${p1.x.toFixed(1)},${p1.y.toFixed(1)}`)
+          }
+          altPts.push(`${p2.x.toFixed(1)},${p2.y.toFixed(1)}`)
+
+          const status = feat.properties.traffic_status
+          segs.push({
+            id: i,
+            x1: p1.x,
+            y1: p1.y,
+            x2: p2.x,
+            y2: p2.y,
+            color: TRAFFIC_THEME[status].stroke,
+            glow: TRAFFIC_THEME[status].glow,
+            status,
+            name: feat.properties.segment_name,
+            speed: feat.properties.speed_estimate_kmh,
+          })
+        }
+      })
+
+      if (altPts.length > 1) {
+        setAltSvgPath(`M ${altPts.join(" L ")}`)
+      }
+      setProjectedSegments(segs)
     } catch {
       // Map projection not ready yet
     }
@@ -212,8 +231,58 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
     }
   }, [mapLoaded, updateSvgPath])
 
+  // Camera framing and immediate re-projection on variant toggle
+  useEffect(() => {
+    if (currentVariant === "traffic_alternate" && mapRef.current) {
+      const map = mapRef.current.getMap()
+      if (map) {
+        map.easeTo({
+          center: [88.3245, 22.5255],
+          zoom: 13.5,
+          duration: 1200,
+        })
+      }
+    }
+    const timer = setTimeout(() => updateSvgPath(), 60)
+    return () => clearTimeout(timer)
+  }, [currentVariant, updateSvgPath])
+
+  // Fullscreen toggle state & map resize handler
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => {
+      const next = !prev
+      setTimeout(() => {
+        mapRef.current?.resize()
+        updateSvgPath()
+      }, 120)
+      return next
+    })
+  }, [updateSvgPath])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false)
+        setTimeout(() => {
+          mapRef.current?.resize()
+          updateSvgPath()
+        }, 120)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isFullscreen, updateSvgPath])
+
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/5">
+    <div
+      className={
+        isFullscreen
+          ? "fixed inset-0 z-50 w-screen h-screen bg-[#FAF8F5] overflow-hidden"
+          : "relative w-full h-full rounded-2xl overflow-hidden border border-white/5"
+      }
+    >
       <Map
         ref={mapRef}
         mapLib={maplibregl}
@@ -223,7 +292,7 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
           zoom: MAP_DEFAULT_ZOOM,
         }}
         style={{ width: "100%", height: "100%" }}
-        mapStyle={DARK_MAP_STYLE}
+        mapStyle={DAYLIGHT_OSM_MAP_STYLE}
         onLoad={() => {
           setMapLoaded(true)
           updateSvgPath()
@@ -235,46 +304,198 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         }}
         attributionControl={false}
       >
-        {/* Guaranteed High-Definition Screen-Projected Neon Route Line */}
-        {svgPath && (
-          <div className="absolute inset-0 pointer-events-none z-10 overflow-visible">
-            <svg className="w-full h-full" style={{ overflow: "visible" }}>
-              {/* Outer Cyan Neon Bloom */}
+        {/* Guaranteed High-Definition Screen-Projected Daylight Route Lines */}
+        <div className="absolute inset-0 pointer-events-none z-10 overflow-visible">
+          <svg className="w-full h-full" style={{ overflow: "visible" }}>
+            {/* Standard Primary Route Line (High-Contrast Royal Transit Blue with White Casing) */}
+            {currentVariant === "standard" && svgPath && (
+              <>
+                {/* White casing underlayer for daylight OSM map contrast */}
+                <path
+                  d={svgPath}
+                  fill="none"
+                  stroke="#FFFFFF"
+                  strokeWidth="8.5"
+                  strokeOpacity="0.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Outer Azure Glow Bloom */}
+                <path
+                  d={svgPath}
+                  fill="none"
+                  stroke="#3B82F6"
+                  strokeWidth="14"
+                  strokeOpacity="0.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ filter: "blur(5px)" }}
+                />
+                {/* Core Solid Royal Cobalt Blue Transit Line */}
+                <path
+                  d={svgPath}
+                  fill="none"
+                  stroke="#1D4ED8"
+                  strokeWidth="4.5"
+                  strokeOpacity="0.95"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
+            )}
+
+            {/* When Alternate Route is active: Show primary route as faint, muted dashed gray reference line */}
+            {currentVariant === "traffic_alternate" && svgPath && (
               <path
                 d={svgPath}
                 fill="none"
-                stroke="#00C8FF"
-                strokeWidth="16"
-                strokeOpacity="0.4"
+                stroke="#64748B"
+                strokeWidth="2.5"
+                strokeOpacity="0.35"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ filter: "blur(6px)" }}
+                strokeDasharray="6 6"
               />
-              {/* Core Solid Electric Cyan Laser Line */}
-              <path
-                d={svgPath}
-                fill="none"
-                stroke="#00C8FF"
-                strokeWidth="4.5"
-                strokeOpacity="0.95"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray="10 5"
-              />
-            </svg>
-          </div>
+            )}
+
+            {/* AI Alternate Route: Continuous Glowing Electric Violet Foundation (Distinct from Cyan) */}
+            {currentVariant === "traffic_alternate" && altSvgPath && (
+              <>
+                {/* Wide Violet Detour Aura */}
+                <path
+                  d={altSvgPath}
+                  fill="none"
+                  stroke="#8B5CF6"
+                  strokeWidth="16"
+                  strokeOpacity="0.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ filter: "blur(8px)" }}
+                />
+                {/* Electric Violet Detour Guideway */}
+                <path
+                  d={altSvgPath}
+                  fill="none"
+                  stroke="#A855F7"
+                  strokeWidth="5.5"
+                  strokeOpacity="0.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </>
+            )}
+
+            {/* AI Alternate Route: 22 Traffic-Graded Segments on top */}
+            {currentVariant === "traffic_alternate" &&
+              projectedSegments.map((seg) => (
+                <g key={`traffic-seg-${seg.id}`}>
+                  {/* Outer Traffic Status Glow Bloom */}
+                  <line
+                    x1={seg.x1}
+                    y1={seg.y1}
+                    x2={seg.x2}
+                    y2={seg.y2}
+                    stroke={seg.color}
+                    strokeWidth="10"
+                    strokeOpacity="0.6"
+                    strokeLinecap="round"
+                    style={{ filter: "blur(4px)" }}
+                  />
+                  {/* Core High-Definition Traffic Segment */}
+                  <line
+                    x1={seg.x1}
+                    y1={seg.y1}
+                    x2={seg.x2}
+                    y2={seg.y2}
+                    stroke={seg.color}
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </g>
+              ))}
+          </svg>
+        </div>
+
+        {/* Traveled and Remaining Paths: only shown in standard mode so cyan never clashes with alternate route */}
+        {currentVariant === "standard" && (
+          <>
+            <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
+              <Layer {...traveledGlowLayer} />
+              <Layer {...traveledLineLayer} />
+            </Source>
+
+            <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
+              <Layer {...remainingLineLayer} />
+            </Source>
+          </>
         )}
 
-        {/* Traveled Path: highlighted Electric Cyan with neon bloom */}
-        <Source id="traveled-route" type="geojson" data={traveledGeoJSON}>
-          <Layer {...traveledGlowLayer} />
-          <Layer {...traveledLineLayer} />
-        </Source>
+        {/* Alternate Detour Mode: MapLibre GPU WebGL Layers (Guarantees 100% visible vibrant colors) */}
+        {currentVariant === "traffic_alternate" && (
+          <>
+            {/* Primary Route shown as faint, muted dashed reference in MapLibre */}
+            <Source id="congested-primary-path" type="geojson" data={routeGeoJSON}>
+              <Layer
+                id="congested-ref-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "#64748B",
+                  "line-width": 2.5,
+                  "line-opacity": 0.4,
+                  "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
 
-        {/* Remaining Path: dashed futuristic path leading to STCET campus */}
-        <Source id="remaining-route" type="geojson" data={remainingGeoJSON}>
-          <Layer {...remainingLineLayer} />
-        </Source>
+            {/* AI Alternate Detour with vibrant traffic status colors */}
+            <Source id="alternate-traffic-route-webgl" type="geojson" data={ALTERNATE_TRAFFIC_ROUTE as any}>
+              {/* Outer Traffic Status Glow Bloom */}
+              <Layer
+                id="alt-traffic-glow"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": [
+                    "match",
+                    ["get", "traffic_status"],
+                    "green",
+                    "#10B981",
+                    "amber",
+                    "#F59E0B",
+                    "red",
+                    "#EF4444",
+                    "#8B5CF6",
+                  ],
+                  "line-width": 14,
+                  "line-opacity": 0.6,
+                  "line-blur": 6,
+                }}
+              />
+              {/* High-Definition Core Traffic Segment */}
+              <Layer
+                id="alt-traffic-core"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": [
+                    "match",
+                    ["get", "traffic_status"],
+                    "green",
+                    "#10B981",
+                    "amber",
+                    "#F59E0B",
+                    "red",
+                    "#EF4444",
+                    "#8B5CF6",
+                  ],
+                  "line-width": 4.5,
+                  "line-opacity": 0.95,
+                }}
+              />
+            </Source>
+          </>
+        )}
 
         {/* Bus stop markers */}
         {BUS_STOPS.map((stop) => {
@@ -301,7 +522,7 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
                       width: 28, height: 28,
                       top: -4, left: -4,
                       background: isNextStop
-                        ? "rgba(0,200,255,0.25)"
+                        ? "rgba(245,158,11,0.3)"
                         : "rgba(124,58,237,0.25)",
                     }}
                   />
@@ -309,12 +530,12 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
 
                 {/* Stop dot */}
                 <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-transform duration-200 group-hover:scale-125 ${
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-transform duration-200 group-hover:scale-125 shadow-xs ${
                     isCampus
-                      ? "bg-violet-500 border-violet-300"
+                      ? "bg-violet-600 border-violet-200"
                       : isNextStop
-                      ? "bg-cyan-400 border-white"
-                      : "bg-[#0D1421] border-cyan-400/60"
+                      ? "bg-amber-500 border-white ring-2 ring-amber-300"
+                      : "bg-white border-[#78716C]"
                   }`}
                 />
 
@@ -326,13 +547,13 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 8 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 min-w-max rounded-xl border border-cyan-400/20 px-3 py-2"
-                      style={{ background: "rgba(13,20,33,0.95)" }}
+                      className="absolute bottom-7 left-1/2 -translate-x-1/2 z-50 min-w-max rounded-xl border border-[#DDD7CB] px-3 py-2 shadow-xl"
+                      style={{ background: "rgba(255,255,255,0.96)" }}
                     >
-                      <p className="text-xs font-semibold text-white">{stop.name}</p>
-                      <p className="text-[10px] text-cyan-400/70">{stop.scheduled_arrival}</p>
+                      <p className="text-xs font-semibold text-[#1C1917]">{stop.name}</p>
+                      <p className="text-[10px] text-[#78716C]">{stop.scheduled_arrival}</p>
                       {isNextStop && (
-                        <p className="text-[10px] text-cyan-400 font-medium">← Next Stop</p>
+                        <p className="text-[10px] text-[#B45309] font-bold">← Next Stop</p>
                       )}
                     </motion.div>
                   )}
@@ -348,15 +569,15 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
             <div className="relative flex flex-col items-center justify-center cursor-pointer group">
               {/* Floating identification badge */}
               <div
-                className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-1 border border-cyan-400/40 shadow-xl flex items-center gap-1.5 z-20"
+                className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-1 border border-[#F59E0B]/50 shadow-xl flex items-center gap-1.5 z-20"
                 style={{
-                  background: "rgba(6,11,24,0.95)",
-                  boxShadow: "0 4px 20px rgba(0,200,255,0.4)",
+                  background: "rgba(255,255,255,0.96)",
+                  boxShadow: "0 4px 20px rgba(245,158,11,0.25)",
                 }}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-bold text-white tracking-wide">Bus B01</span>
-                <span className="text-[10px] font-mono text-cyan-400 font-semibold">{busData.speed_kmh.toFixed(0)} km/h</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold text-[#1C1917] tracking-wide">Bus B01</span>
+                <span className="text-[10px] font-mono text-[#B45309] font-bold">{busData.speed_kmh.toFixed(0)} km/h</span>
               </div>
 
               {/* Sonar pulse ring 1 */}
@@ -364,7 +585,7 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
                 className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
                   width: 56, height: 56,
-                  background: "rgba(0,200,255,0.25)",
+                  background: "rgba(245,158,11,0.25)",
                   animationDuration: "1.8s",
                 }}
               />
@@ -373,7 +594,7 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
                 className="absolute rounded-full animate-ping pointer-events-none"
                 style={{
                   width: 40, height: 40,
-                  background: "rgba(0,200,255,0.35)",
+                  background: "rgba(245,158,11,0.35)",
                   animationDuration: "1.8s",
                   animationDelay: "0.5s",
                 }}
@@ -381,20 +602,20 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
 
               {/* Directional heading ring */}
               <div
-                className="absolute w-12 h-12 rounded-full pointer-events-none transition-transform duration-1000 ease-out"
+                className="absolute w-12 h-12 rounded-full pointer-events-none transition-transform duration-300 ease-out"
                 style={{
                   transform: `rotate(${busData.bearing}deg)`,
                 }}
               >
-                <div className="w-2.5 h-2.5 bg-white rounded-full mx-auto -mt-1 shadow-[0_0_8px_#00C8FF]" />
+                <div className="w-2.5 h-2.5 bg-white rounded-full mx-auto -mt-1 shadow-[0_0_8px_#F59E0B]" />
               </div>
 
               {/* Bus icon circle */}
               <div
-                className="relative w-11 h-11 rounded-full border-2 border-white flex items-center justify-center z-10 transition-transform group-hover:scale-110"
+                className="relative w-11 h-11 rounded-full border-2 border-white flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg"
                 style={{
-                  background: "linear-gradient(135deg, #00C8FF 0%, #0077FF 100%)",
-                  boxShadow: "0 0 25px rgba(0,200,255,0.9), 0 0 50px rgba(0,119,255,0.4)",
+                  background: "linear-gradient(135deg, #F59E0B 0%, #B45309 100%)",
+                  boxShadow: "0 0 25px rgba(245,158,11,0.8), 0 0 45px rgba(180,83,9,0.35)",
                 }}
               >
                 <Bus className="w-6 h-6 text-white drop-shadow-md" />
@@ -404,39 +625,183 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         )}
       </Map>
 
-      {/* Top-left: live status badge */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-        <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2 border border-white/10"
-          style={{ background: "rgba(13,20,33,0.9)" }}
-        >
-          <span className={`w-2 h-2 rounded-full ${busData ? "bg-emerald-400 pulse-live" : "bg-red-400"}`} />
-          <span className="text-xs font-medium text-white">{busData ? "LIVE" : "Connecting..."}</span>
-        </div>
-        {busData && (
-          <div
-            className="rounded-xl px-3 py-2 border border-white/10"
-            style={{ background: "rgba(13,20,33,0.9)" }}
+      {/* Top-left: Leaflet Zoom Controls & Live Status Pill (Inspired by Image 2 & 3) */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2.5">
+        {/* Leaflet-style Zoom & Fullscreen Buttons */}
+        <div className="flex flex-col rounded-xl overflow-hidden border border-[#DDD7CB] shadow-md bg-white/95 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomIn()}
+            className="w-8 h-8 flex items-center justify-center text-[#1C1917] hover:bg-[#F6F4EE] border-b border-[#DDD7CB] font-bold text-base transition-colors"
+            title="Zoom in"
           >
-            <p className="text-[10px] text-white/50">Last update</p>
-            <p className="text-xs text-white font-mono">{toIST(busData.timestamp)}</p>
-          </div>
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomOut()}
+            className="w-8 h-8 flex items-center justify-center text-[#1C1917] hover:bg-[#F6F4EE] border-b border-[#DDD7CB] font-bold text-base transition-colors"
+            title="Zoom out"
+          >
+            &minus;
+          </button>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="w-8 h-8 flex items-center justify-center text-[#1C1917] hover:bg-[#F6F4EE] transition-colors"
+            title={isFullscreen ? "Exit Fullscreen (Esc)" : "Full Screen View"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5 text-[#1C1917]" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5 text-[#1C1917]" />
+            )}
+          </button>
+        </div>
+
+        {/* Live Status Pill matching Image 3 */}
+        <div
+          className="flex items-center gap-2 rounded-xl px-3 py-1.5 border border-[#DDD7CB] shadow-sm backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
+        >
+          <span className={`w-2 h-2 rounded-full ${busData ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+          <span className="text-xs font-semibold text-[#1C1917]">{busData ? "Live Telemetry" : "Connecting..."}</span>
+          <span className="text-[10px] font-mono text-[#78716C] border-l border-[#DDD7CB] pl-2 hidden sm:inline">15s Cadence</span>
+        </div>
+      </div>
+
+      {/* Center-Top: Floating Route Switcher & Live Traffic Legend */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+        <div
+          className="flex items-center gap-1.5 p-1 rounded-2xl border border-[#DDD7CB] shadow-md backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
+        >
+          <button
+            onClick={() => setVariant("standard")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              currentVariant === "standard"
+                ? "bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] shadow-xs"
+                : "text-[#78716C] hover:text-[#1C1917]"
+            }`}
+          >
+            <RouteIcon className="w-3.5 h-3.5 text-[#B45309]" />
+            <span className="hidden sm:inline">Primary Route</span>
+            <span className="sm:hidden">Primary</span>
+          </button>
+
+          <button
+            onClick={() => setVariant("traffic_alternate")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              currentVariant === "traffic_alternate"
+                ? "bg-purple-100 text-purple-900 border border-purple-300 shadow-xs"
+                : "text-[#78716C] hover:text-[#1C1917]"
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-purple-600" />
+            <span>AI Alternate Detour</span>
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-200 text-purple-900 rounded font-mono font-bold">
+              Violet &bull; 22 Segments
+            </span>
+          </button>
+        </div>
+
+        {/* Dynamic Traffic Legend for Alternate Route */}
+        {currentVariant === "traffic_alternate" && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 px-3.5 py-1 rounded-full border border-[#DDD7CB] text-[10px] font-mono shadow-md backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.96)" }}
+          >
+            <div className="flex items-center gap-1.5 text-purple-800 font-bold border-r border-[#DDD7CB] pr-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" /> Detour Path
+            </div>
+            <span className="flex items-center gap-1 text-emerald-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" /> &gt;30 km/h
+            </span>
+            <span className="flex items-center gap-1 text-amber-700 font-bold">
+              <span className="w-2 h-2 rounded-full bg-amber-500" /> 15-30 km/h
+            </span>
+            <span className="flex items-center gap-1 text-red-600 font-bold">
+              <span className="w-2 h-2 rounded-full bg-red-500" /> &lt;15 km/h (Choke)
+            </span>
+          </motion.div>
         )}
       </div>
 
-      {/* Top-right: center on bus button */}
-      {busData && (
-        <button
-          onClick={centerOnBus}
-          title="Center on bus"
-          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center hover:border-cyan-400/40 transition-all"
-          style={{ background: "rgba(13,20,33,0.9)" }}
-        >
-          <Navigation className="w-4 h-4 text-cyan-400" />
-        </button>
-      )}
+      {/* Top-right: Controls (Center on bus, Exit Fullscreen & Link to Analytics) */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            title="Exit Fullscreen"
+            className="h-10 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 flex items-center gap-1.5 text-xs font-bold text-amber-900 shadow-sm backdrop-blur-md transition-all active:scale-95"
+          >
+            <Minimize2 className="w-3.5 h-3.5 text-amber-800" />
+            <span>Exit Fullscreen</span>
+          </button>
+        )}
 
-      {/* Bottom: ETA info bar */}
+        <Link
+          href="/analytics"
+          title="Open Admin ML Analytics (Admin Role Required)"
+          className="h-10 px-3.5 rounded-xl border border-[#DDD7CB] flex items-center gap-1.5 hover:border-[#B45309]/50 hover:bg-[#FEF3C7] transition-all text-xs font-semibold text-[#1C1917] shadow-sm backdrop-blur-md"
+          style={{ background: "rgba(255,255,255,0.95)" }}
+        >
+          <Layers className="w-3.5 h-3.5 text-[#B45309]" />
+          <span className="hidden sm:inline">Admin Hub</span>
+        </Link>
+
+        {busData && (
+          <button
+            onClick={centerOnBus}
+            title="Center on bus"
+            className="w-10 h-10 rounded-xl border border-[#DDD7CB] flex items-center justify-center hover:border-[#B45309]/50 hover:bg-[#FEF3C7] transition-all shadow-sm backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.95)" }}
+          >
+            <Navigation className="w-4 h-4 text-[#B45309]" />
+          </button>
+        )}
+      </div>
+
+      {/* Floating Transit Legend (matching Leaflet raster OSM look from Image 3) */}
+      <div className="absolute bottom-24 right-4 z-10 hidden sm:block pointer-events-auto">
+        <div
+          className="rounded-xl border border-[#DDD7CB] p-2.5 shadow-lg backdrop-blur-md text-xs"
+          style={{ background: "rgba(255,255,255,0.95)" }}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] mb-1.5 flex items-center justify-between gap-4">
+            <span>Transit Legend</span>
+            <span className="text-[9px] font-mono font-normal text-[#A8A29E]">OSM Daylight</span>
+          </div>
+          <div className="space-y-1.5 text-[11px] font-medium text-[#44403C]">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-1 rounded-full bg-[#1D4ED8] shadow-xs" />
+              <span>Active Transit Corridor</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 border border-white shadow-xs" />
+              <span>Campus Bus (Live Telemetry)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 border border-white shadow-xs" />
+              <span>STCET Terminal</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-white border-2 border-[#1D4ED8] shadow-xs" />
+              <span>Intermediate Stops</span>
+            </div>
+          </div>
+          {/* Leaflet & OpenStreetMap attribution */}
+          <div className="mt-2 pt-1.5 border-t border-[#E5DFD5] text-[9px] text-[#A8A29E] font-mono flex items-center justify-between gap-2">
+            <span>Leaflet</span>
+            <span>© OpenStreetMap · © Esri</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: ETA info bar with Live Coordinates HUD (matching Image 2) */}
       {busData && (
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -445,43 +810,62 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
           className="absolute bottom-4 left-4 right-4 z-10"
         >
           <div
-            className="rounded-2xl border border-white/10 px-5 py-3 flex items-center justify-between gap-4"
-            style={{ background: "rgba(13,20,33,0.92)" }}
+            className="rounded-2xl border border-[#DDD7CB] px-5 py-3 flex items-center justify-between gap-4 shadow-xl backdrop-blur-md"
+            style={{ background: "rgba(255,255,255,0.96)" }}
           >
             <div className="flex items-center gap-2.5">
-              <Clock className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <Clock className="w-4 h-4 text-[#B45309] flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-white/50">ETA to next stop</p>
-                <p className="text-sm font-bold text-cyan-400">{busData.eta_minutes} min</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">ETA to next stop</p>
+                <p className="text-sm font-extrabold text-[#B45309]">{busData.eta_minutes} min</p>
               </div>
             </div>
-            <div className="w-px h-8 bg-white/10" />
+            <div className="w-px h-8 bg-[#E5DFD5]" />
             <div className="flex items-center gap-2.5">
-              <Zap className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <Zap className="w-4 h-4 text-[#D97706] flex-shrink-0" />
               <div>
-                <p className="text-[10px] text-white/50">Speed</p>
-                <p className="text-sm font-bold text-white">{busData.speed_kmh.toFixed(1)} km/h</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">Speed</p>
+                <p className="text-sm font-bold text-[#1C1917] font-mono">{busData.speed_kmh.toFixed(1)} km/h</p>
               </div>
             </div>
-            <div className="w-px h-8 bg-white/10 hidden sm:block" />
+            <div className="w-px h-8 bg-[#E5DFD5] hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2.5">
               <AlertTriangle
                 className={`w-4 h-4 flex-shrink-0 ${
                   busData.delay_minutes > 5
-                    ? "text-red-400"
+                    ? "text-red-500"
                     : busData.delay_minutes > 2
-                    ? "text-amber-400"
-                    : "text-emerald-400"
+                    ? "text-amber-500"
+                    : "text-emerald-600"
                 }`}
               />
               <div>
-                <p className="text-[10px] text-white/50">Schedule</p>
+                <p className="text-[10px] text-[#78716C] uppercase font-bold tracking-wider">Schedule</p>
                 <p className={`text-sm font-bold ${
-                  busData.delay_minutes > 5 ? "text-red-400" : busData.delay_minutes > 2 ? "text-amber-400" : "text-emerald-400"
+                  busData.delay_minutes > 5 ? "text-red-600" : busData.delay_minutes > 2 ? "text-amber-700" : "text-emerald-700"
                 }`}>
                   {busData.delay_minutes <= 2 ? "On Time ✓" : `${busData.delay_minutes} min late`}
                 </p>
               </div>
+            </div>
+
+            {/* Live GPS Coordinates HUD & Track Bus action (Inspired by Image 2) */}
+            <div className="w-px h-8 bg-[#E5DFD5] hidden lg:block" />
+            <div className="hidden lg:flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F6F4EE] border border-[#DDD7CB]">
+                <Compass className="w-3.5 h-3.5 text-[#B45309]" />
+                <span className="text-[11px] font-mono text-[#44403C] font-semibold">
+                  Coordinates: {busData.latitude.toFixed(6)}, {busData.longitude.toFixed(6)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={centerOnBus}
+                className="px-3.5 py-1.5 rounded-xl bg-[#1C1917] hover:bg-[#B45309] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              >
+                <Navigation className="w-3 h-3 text-amber-400" />
+                <span>Track Bus</span>
+              </button>
             </div>
           </div>
         </motion.div>
@@ -492,10 +876,10 @@ export default function LiveMap({ busData, userRole, onStopClick }: LiveMapProps
         {!mapLoaded && (
           <motion.div
             exit={{ opacity: 0, transition: { duration: 0.4 } }}
-            className="absolute inset-0 bg-[#060B18] flex flex-col items-center justify-center z-20 rounded-2xl"
+            className="absolute inset-0 bg-[#FAF8F5] flex flex-col items-center justify-center z-20 rounded-2xl border border-[#DDD7CB]"
           >
-            <div className="w-12 h-12 rounded-full border-2 border-cyan-400/20 border-t-cyan-400 animate-spin mb-4" />
-            <p className="text-sm text-white/40">Loading Kolkata map...</p>
+            <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-600 animate-spin mb-4" />
+            <p className="text-sm text-[#78716C]">Loading Kolkata map...</p>
           </motion.div>
         )}
       </AnimatePresence>

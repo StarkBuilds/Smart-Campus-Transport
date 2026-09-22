@@ -1,0 +1,75 @@
+{
+  "generator": "CampusRide Member 2 synthetic dataset generator",
+  "seed": 42,
+  "config": {
+    "n_buses": 12,
+    "trips_per_bus_per_day": 2,
+    "trip_dates": [
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+      "2026-08-06",
+      "2026-08-07"
+    ],
+    "gps_interval_seconds": 15,
+    "vehicle_speed_kmh": 25.0,
+    "stop_dwell_seconds": 22.0,
+    "seed": 42,
+    "target_records": 25000,
+    "imperfect_rate": 0.012
+  },
+  "routes": [
+    "R01",
+    "R02"
+  ],
+  "bus_count": 12,
+  "trip_count": 120,
+  "raw_records": 24956,
+  "valid_candidate_records": 24808,
+  "invalid_or_imperfect_records": 148,
+  "route_distribution": {
+    "R01": 15315,
+    "R02": 9641
+  },
+  "scenario_trip_distribution": {
+    "normal": 58,
+    "rush": 33,
+    "moderately_delayed": 18,
+    "severely_delayed": 11
+  },
+  "delay_minutes": {
+    "min": -2.103,
+    "mean": 8.477,
+    "median": 6.357,
+    "max": 51.639
+  },
+  "controlled_imperfection_count": 298,
+  "controlled_imperfection_types": [
+    "duplicate",
+    "stale",
+    "invalid_coord",
+    "missing_optional",
+    "unrealistic_speed",
+    "unknown_stop"
+  ],
+  "ground_truth_columns": [
+    "scheduled_next_stop_arrival",
+    "actual_next_stop_arrival",
+    "delay_next_stop_minutes",
+    "scenario"
+  ],
+  "canonical_columns": [
+    "bus_id",
+    "route_id",
+    "trip_id",
+    "timestamp",
+    "latitude",
+    "longitude",
+    "bearing",
+    "speed_kmh",
+    "accuracy_m",
+    "status",
+    "next_stop_id"
+  ],
+  "note": "Ground-truth/target fields are retained for labeling/audit and must not be used as realtime model inputs."
+}

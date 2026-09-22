@@ -1,17 +1,17 @@
 "use client"
 
 // Login page — two tabs: Student and Driver
+// Luxury Royal Beige & Warm Stone Aesthetic
 // Stores role in localStorage so the dashboard knows which view to show
-// When backend auth is ready, swap localStorage with a real JWT call
 
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Bus, Eye, EyeOff, GraduationCap, Truck } from "lucide-react"
+import { Bus, Eye, EyeOff, GraduationCap, Truck, ShieldCheck, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 
-type Role = "student" | "driver"
+type Role = "student" | "driver" | "admin"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,8 +25,8 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate an API call — replace with real auth when backend is ready
-    await new Promise((r) => setTimeout(r, 1200))
+    // Simulate an API call
+    await new Promise((r) => setTimeout(r, 1000))
 
     // Store the role so the dashboard knows what to show
     localStorage.setItem("user_role", role)
@@ -34,85 +34,84 @@ export default function LoginPage() {
 
     toast.success(`Welcome back! Logging you in as ${role}...`)
 
-    // Drivers go to driver dashboard, students to regular dashboard
+    // Drivers go to driver dashboard, admins to analytics, students to student dashboard
     if (role === "driver") {
       router.push("/driver")
+    } else if (role === "admin") {
+      router.push("/analytics")
     } else {
       router.push("/dashboard")
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-5 relative overflow-hidden">
-      {/* Background orbs */}
-      <div className="orb w-[500px] h-[500px] -top-40 -left-40 bg-cyan-500/8 animate-[orb-drift-1_12s_ease-in-out_infinite]" />
-      <div className="orb w-[400px] h-[400px] -bottom-20 -right-20 bg-violet-600/8 animate-[orb-drift-2_15s_ease-in-out_infinite]" />
-
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: "linear-gradient(rgba(0,200,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+    <div className="min-h-screen flex items-center justify-center px-5 relative overflow-hidden bg-gradient-to-b from-[#F6F4EE] via-[#FAF8F5] to-[#F5F2EB] text-[#1C1917]">
+      {/* Warm Ambient Washes */}
+      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#FEF3C7]/40 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -right-20 w-[450px] h-[450px] rounded-full bg-[#DBEAFE]/40 blur-3xl pointer-events-none" />
 
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-md my-10"
       >
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center glow-cyan">
+        <div className="flex flex-col items-center justify-center mb-6">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1E40AF] to-[#B45309] flex items-center justify-center shadow-[0_2px_12px_rgba(30,64,175,0.25)] group-hover:scale-105 transition-transform">
               <Bus className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">CampusRide</span>
+            <div className="flex flex-col leading-none">
+              <span className="text-lg font-extrabold text-[#1C1917] tracking-tight">CampusRide</span>
+              <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono mt-0.5">STCET Live Fleet</span>
+            </div>
           </Link>
         </div>
 
-        <div className="glass-strong rounded-2xl border border-white/5 p-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mb-7">Sign in to track your bus</p>
+        {/* Elevated Royal Card */}
+        <div className="bg-white rounded-3xl border border-[#DDD7CB] p-8 shadow-[0_16px_45px_rgba(120,113,108,0.08)]">
+          <h1 className="text-2xl font-extrabold text-[#1C1917] mb-1">Welcome back</h1>
+          <p className="text-xs text-[#57534E] mb-6">Sign in to track your college transit and boarding passes</p>
 
           {/* Role selector tabs */}
-          <div className="flex gap-2 p-1 rounded-xl bg-white/5 mb-7">
-            {(["student", "driver"] as Role[]).map((r) => (
+          <div className="flex gap-1.5 p-1 rounded-2xl bg-[#EFECE6] border border-[#DDD7CB] mb-6">
+            {(["student", "driver", "admin"] as Role[]).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRole(r)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
                   role === r
-                    ? "bg-cyan-400 text-[#060B18]"
-                    : "text-muted-foreground hover:text-white"
+                    ? "bg-[#1C1917] text-white shadow-xs"
+                    : "text-[#78716C] hover:text-[#1C1917]"
                 }`}
               >
-                {r === "student" ? <GraduationCap className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
-                {r.charAt(0).toUpperCase() + r.slice(1)}
+                {r === "student" && <GraduationCap className="w-4 h-4 text-amber-400" />}
+                {r === "driver" && <Truck className="w-4 h-4 text-blue-400" />}
+                {r === "admin" && <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                {r === "student" ? "Student" : r === "driver" ? "Driver" : "Admin"}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">
-                {role === "student" ? "College Email" : "Driver ID / Email"}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">
+                {role === "student" ? "College Email" : role === "driver" ? "Driver ID / Email" : "Admin Coordinator Email"}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === "student" ? "you@stcet.ac.in" : "driver@stcet.ac.in"}
+                placeholder={role === "student" ? "you@stcet.ac.in" : role === "driver" ? "driver@stcet.ac.in" : "admin@stcet.ac.in"}
                 required
-                className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
+                className="px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Password</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-[#292524] uppercase tracking-wider">Password</label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
@@ -120,24 +119,24 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 pr-11 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-muted-foreground focus:outline-none focus:border-cyan-400/50 transition-colors"
+                  className="w-full px-4 py-3 pr-11 rounded-xl bg-[#FAF8F5] border border-[#D6CEBF] text-[#1C1917] text-xs font-medium placeholder:text-[#A8A29E] focus:outline-none focus:bg-white focus:border-[#1E40AF] transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#1C1917] transition-colors"
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input type="checkbox" className="rounded" />
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label className="flex items-center gap-2 text-[#57534E] cursor-pointer">
+                <input type="checkbox" className="rounded border-[#D6CEBF] text-[#1E40AF]" />
                 Remember me
               </label>
-              <a href="#" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+              <a href="#" className="font-semibold text-[#1E40AF] hover:underline">
                 Forgot password?
               </a>
             </div>
@@ -145,24 +144,23 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="py-3.5 bg-cyan-400 text-[#060B18] font-semibold rounded-xl hover:bg-cyan-300 transition-all duration-200 glow-cyan disabled:opacity-60 disabled:cursor-not-allowed"
+              className="mt-2 w-full py-3.5 px-5 rounded-xl bg-[#1C1917] hover:bg-[#292524] text-[#FAF8F5] text-xs font-bold transition-all shadow-[0_4px_14px_rgba(28,25,23,0.2)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
             >
-              {loading ? "Signing in..." : `Sign in as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
+              {loading ? (
+                <span>Authenticating with STCET Central...</span>
+              ) : (
+                <span>Sign In to {role === "student" ? "Student Dashboard" : "Driver Console"}</span>
+              )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <div className="mt-6 pt-6 border-t border-[#F2EDE4] text-center text-xs text-[#57534E]">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
-              Create one
+            <Link href="/register" className="text-[#1E40AF] font-bold hover:underline">
+              Create student account
             </Link>
-          </p>
+          </div>
         </div>
-
-        {/* Back to home */}
-        <p className="text-center text-sm text-muted-foreground mt-5">
-          <Link href="/" className="hover:text-white transition-colors">← Back to home</Link>
-        </p>
       </motion.div>
     </div>
   )
