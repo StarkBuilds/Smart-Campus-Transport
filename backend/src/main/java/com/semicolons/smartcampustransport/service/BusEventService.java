@@ -46,6 +46,14 @@ public class BusEventService {
      */
     @Transactional
     public BusLocationEventResponse ingestEvent(BusLocationEventRequest request) {
+        return ingestEvent(request, false);
+    }
+
+    /**
+     * @param simulationEvent when true, skip DATA_QUALITY alerts (demo resets teleport along the fixed path).
+     */
+    @Transactional
+    public BusLocationEventResponse ingestEvent(BusLocationEventRequest request, boolean simulationEvent) {
         log.debug("Ingesting event for bus {} at {}", request.busId(), request.timestamp());
 
         // Step 1: Business validation
@@ -64,8 +72,11 @@ public class BusEventService {
             );
         }
 
-        // Step 3: Build and persist event
-        BusLocationEvent event = buildEvent(request, validation);
+        // Step 3: Build and persist event (simulation resets are not "suspicious GPS")
+        ValidationResult persistValidation = simulationEvent
+                ? ValidationResult.accepted()
+                : validation;
+        BusLocationEvent event = buildEvent(request, persistValidation);
         event = eventRepository.save(event);
         log.info("Saved event {} for bus {} with status {}",
             event.getEventId(), request.busId(), event.getIngestionStatus());
@@ -73,8 +84,8 @@ public class BusEventService {
         // Step 4: Update bus latest state
         updateBusLatestState(request);
 
-        // Step 5: Generate alerts for suspicious data
-        if (validation.hasWarnings()) {
+        // Step 5: Generate alerts for suspicious data (admin/diagnostics only — never from simulation teleports)
+        if (!simulationEvent && validation.hasWarnings()) {
             alertService.generateDataQualityAlert(request, validation.getWarnings());
         }
 
@@ -84,7 +95,7 @@ public class BusEventService {
         // Step 7: Check for late bus (comparison against schedule)
         alertService.checkLateBus(request);
 
-        if (validation.hasWarnings()) {
+        if (!simulationEvent && validation.hasWarnings()) {
             return BusLocationEventResponse.acceptedWithWarnings(
                 String.valueOf(event.getEventId()), validation.getWarnings());
         }
@@ -142,6 +153,7 @@ public class BusEventService {
             bus.setLatestLongitude(request.longitude());
             bus.setLatestTimestamp(Instant.parse(request.timestamp()));
             bus.setLatestSpeedKmh(request.speedKmh());
+            bus.setBearing(request.bearing());
             bus.setStatus(request.toStatusEnum());
             bus.setNextStopId(request.nextStopId());
             busRepository.save(bus);

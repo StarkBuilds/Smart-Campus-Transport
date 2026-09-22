@@ -10,5 +10,6 @@ public record RegistrationRequest(
     Double pickupLongitude,
     String driverId,
     String assignedBusId,
-    String assignedRouteId
+    String assignedRouteId,
+    String assignedStopId
 ) {}

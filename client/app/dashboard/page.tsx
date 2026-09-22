@@ -16,7 +16,10 @@ import RouteInspector from "@/components/landing/RouteInspector"
 import TransitSmartCard from "@/components/landing/TransitSmartCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
 import { toIST } from "@/lib/formatting"
+import { api } from "@/services/api"
 import type { BusStop } from "@/types/bus"
+
+type AppAlert = { id: number; busId: string; type: string; status: string; message: string; timestamp: string }
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -29,20 +32,36 @@ export default function StudentDashboard() {
   const [mobileTab, setMobileTab] = useState<"map" | "routes" | "alerts" | "pass">("map")
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [route, setRoute] = useState<{name: string; description: string; stops: BusStop[]}>({name: "Route", description: "", stops: []})
+  const [persistentAlerts, setPersistentAlerts] = useState<AppAlert[]>([])
+  const [simulateReverse, setSimulateReverse] = useState(false)
+  const [simulating, setSimulating] = useState(false)
 
   useEffect(() => {
-    fetch("/api/routes/R01").then(r => r.json()).then(setRoute).catch(()=>{})
+    fetch("/api/routes/R01").then(r => r.json()).then((data) => {
+      setRoute(data)
+    }).catch(()=>{})
   }, [])
 
-  // Load user info from localStorage
   useEffect(() => {
     const name = localStorage.getItem("user_name") || "Student"
-    const stopId = localStorage.getItem("user_stop")
     setUserName(name)
-    if (stopId) {
-      void stopId
-    }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadAlerts() {
+      const alerts = await api.getAlerts()
+      // Defense in depth: never show engineering diagnostics to students
+      if (!cancelled) {
+        setPersistentAlerts(
+          alerts.filter(a => a.status === "ACTIVE" && a.type !== "DATA_QUALITY")
+        )
+      }
+    }
+    loadAlerts()
+    const id = setInterval(loadAlerts, 4000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [busData?.delay_minutes])
 
   // Fire a "Bus is nearby!" notification when ETA drops below 5 minutes
   useEffect(() => {
@@ -62,42 +81,76 @@ export default function StudentDashboard() {
   }, [busData?.eta_minutes, alertFired])
 
   const notifiedDelayRef = useRef<number | null>(null)
+  const notifPermissionAsked = useRef(false)
   useEffect(() => {
     if (!busData) return
-    const delay = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0)
+    const delay = Math.round(busData.delay_minutes ?? 0)
     if (Math.abs(delay) < 1 || notifiedDelayRef.current === delay) return
     notifiedDelayRef.current = delay
+
+    // Request browser notification permission once when a meaningful delay appears
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default" &&
+      !notifPermissionAsked.current
+    ) {
+      notifPermissionAsked.current = true
+      Notification.requestPermission()
+    }
+
     const message = delay > 0
       ? `Bus B01 is running ${delay} minute${delay === 1 ? "" : "s"} late.`
       : `Bus B01 is approximately ${Math.abs(delay)} minute${Math.abs(delay) === 1 ? "" : "s"} early.`
     toast.warning(message, { duration: 7000 })
-  }, [busData?.delay_minutes, busData?.features?.predicted_delay_minutes])
 
-  // Request browser notification permission on mount
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission()
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      new Notification("CampusRide Delay Update", { body: message, icon: "/favicon.ico" })
     }
-  }, [])
+  }, [busData?.delay_minutes])
 
   const handleLogout = () => {
     localStorage.clear()
     router.push("/")
   }
 
-  // Derive delay status
+  // Derive delay status from calculated delay (never hard-coded)
+  const formatDelayLabel = (d: number) => {
+    if (Math.abs(d) < 1) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200", tone: "good" as const }
+    if (d > 0) return { label: `DELAYED · +${d} min`, color: "text-red-700 bg-red-50 border-red-200", tone: "bad" as const }
+    return { label: `EARLY · ${Math.abs(d)} min early`, color: "text-emerald-700 bg-emerald-50 border-emerald-200", tone: "good" as const }
+  }
+
   const getDelayStatus = () => {
-    if (!busData) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
-    const d = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0);
-    if (Math.abs(d) < 1) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
-    if (d > 0) return { label: `DELAYED · +${d} min`, color: "text-amber-800 bg-amber-50 border-amber-200" }
-    return { label: `EARLY · ${Math.abs(d)} min`, color: "text-sky-700 bg-sky-50 border-sky-200" }
+    if (!busData) return formatDelayLabel(0)
+    return formatDelayLabel(Math.round(busData.delay_minutes ?? 0))
   }
 
   const delayStatus = getDelayStatus()
+  const nextStopDelayStatus = formatDelayLabel(Math.round(busData?.next_stop_delay_minutes ?? 0))
   const nextStop = busData?.next_stop ?? { name: "Loading route stop" }
+  const currentStopName = busData?.current_stop?.name
   const dynamicEta = busData?.eta_minutes ?? 0
-  const predictedDelay = Math.round(busData?.features?.predicted_delay_minutes ?? busData?.delay_minutes ?? 0)
+  const predictedDelay = Math.round(busData?.delay_minutes ?? 0)
+
+  const routeStops = (route as any)?.stops as Array<{ name: string; stopId?: string }> | undefined
+  const routeSource = routeStops?.[0]?.name || "Source"
+  const routeDestination = routeStops?.[routeStops.length - 1]?.name || "Destination"
+
+  const handleSimulate = async () => {
+    try {
+      setSimulating(true)
+      const result = await api.simulateB01(simulateReverse)
+      toast.success(result.message || "B01 simulation started")
+      setSimulateReverse(!simulateReverse)
+      const alerts = await api.getAlerts()
+      setPersistentAlerts(alerts.filter(a => a.status === "ACTIVE" && a.type !== "DATA_QUALITY"))
+    } catch (e: any) {
+      toast.error(e?.message || "Simulation failed")
+    } finally {
+      setSimulating(false)
+    }
+  }
 
   return (
     <div className="h-[100svh] w-full flex flex-col bg-parchment text-espresso overflow-hidden font-sans select-none">
@@ -117,78 +170,116 @@ export default function StudentDashboard() {
             Right: Weather + Alerts + Quick Stops
         ════════════════════════════════════════════════════════════════════ */}
         
-        {/* Desktop Left: Floating Translucent Glass ETA Card */}
-        <div className="hidden lg:flex flex-col gap-3 absolute bottom-8 left-8 z-20 w-84 max-h-[calc(100vh-7rem)] pointer-events-auto">
-          {/* Main ETA Card */}
+        {/* Desktop Left: compact horizontal glass transport card */}
+        <div className="hidden lg:flex flex-col gap-3 absolute bottom-8 left-8 z-20 w-[min(640px,calc(100vw-22rem))] max-h-[calc(100vh-7rem)] pointer-events-auto">
+          {/* Persistent in-app alerts (not toast-only) */}
+          {persistentAlerts.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {persistentAlerts.slice(0, 3).map((alert) => (
+                <div
+                  key={alert.id}
+                  className="bg-white/95 backdrop-blur-md rounded-xl border border-red-200 shadow-md px-3 py-2.5 flex items-start gap-2"
+                >
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-espresso truncate">🚌 {alert.message}</p>
+                    <p className="text-[10px] text-stone-text mt-0.5">{alert.type} · {toIST(alert.timestamp)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-parchment/95 backdrop-blur-md rounded-2xl border border-stone-subtle p-5 shadow-lg flex flex-col gap-4"
+            className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/60 shadow-lg overflow-hidden"
+            style={{ backdropFilter: "blur(16px)" }}
           >
-            {/* Bus Header */}
-            <div className="flex items-center justify-between border-b border-stone-subtle/80 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-terracotta text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                  B01
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-espresso">{route.name || "Route R01"}</h2>
-                  <p className="text-[11px] text-stone-text">{route.stops[0]?.name || "Source"} ➔ {route.stops.at(-1)?.name || "Destination"}</p>
-                </div>
-              </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${delayStatus.color}`}>
-                {delayStatus.label}
-              </span>
-            </div>
+            <div className="flex flex-row items-stretch min-h-[168px]">
+              <div className="w-1.5 bg-terracotta shrink-0" />
 
-            {/* Arrival Time */}
-            <div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Estimated Arrival</span>
-              <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-4xl font-extrabold text-espresso font-serif">
-                  {dynamicEta || "--"}
-                </span>
-                <span className="text-sm font-semibold text-stone-text">minutes away</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-espresso font-medium bg-parchment-warm p-2 rounded-lg border border-stone-subtle">
-                <MapPin className="w-3.5 h-3.5 text-terracotta shrink-0" />
-                <span>Next stop: <strong className="text-espresso">{nextStop.name}</strong></span>
-              </div>
-              <div className="mt-2 space-y-1 text-[11px] text-stone-text">
-                <span className="font-bold uppercase tracking-wider">Upcoming stops</span>
-                {(busData?.upcoming_stops ?? []).slice(0, 5).map((stop) => (
-                  <div key={stop.stopId} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-terracotta" />
-                    <span>{stop.name}</span>
+              <div className="flex-1 p-4 flex flex-col justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 rounded-xl bg-terracotta text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                      B01
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-sm font-bold text-espresso leading-snug break-words" title={route.name}>
+                        {route.name || "Route R01"}
+                      </h2>
+                      <p className="text-[11px] text-stone-text leading-snug break-words" title={`${routeSource} → ${routeDestination}`}>
+                        {routeSource} → {routeDestination}
+                      </p>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${delayStatus.color}`}>
+                    {delayStatus.label}
+                  </span>
+                </div>
 
-            {/* Telemetry Metrics */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-subtle/80">
-              <div className="bg-white/80 p-2.5 rounded-xl border border-stone-subtle">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Speed</span>
-                <p className="text-sm font-bold text-espresso font-mono mt-0.5">
-                  {busData?.speed_kmh?.toFixed(1) ?? "24.5"} <span className="text-[10px] font-normal text-stone-text">km/h</span>
-                </p>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-stone-subtle">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Transport Status</span>
-                <p className="text-sm font-bold text-sage font-mono mt-0.5">
-                  {delayStatus.label}
-                </p>
-              </div>
-            </div>
+                <div className="flex items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-stone-text">Estimated Arrival</span>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-4xl font-extrabold text-espresso font-serif">{dynamicEta || "--"}</span>
+                      <span className="text-sm font-semibold text-stone-text">min away</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-stone-text items-center">
+                      {currentStopName && (
+                        <span>Current: <strong className="text-espresso">{currentStopName}</strong></span>
+                      )}
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        <MapPin className="w-3 h-3 text-terracotta shrink-0" />
+                        Next: <strong className="text-espresso">{nextStop.name}</strong>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${nextStopDelayStatus.color}`}>
+                          {Math.abs(Math.round(busData?.next_stop_delay_minutes ?? 0)) < 1
+                            ? "ON TIME"
+                            : nextStopDelayStatus.label.replace(" · ", " ")}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
 
-            {/* GPS Freshness */}
-            <div className="flex items-center justify-between text-[11px] text-stone-text pt-1">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live GPS Active
-              </span>
-              <span className="font-mono text-[10px]">{busData ? toIST(busData.timestamp) : "12:00 PM IST"}</span>
+                  <div className="grid grid-cols-2 gap-2 shrink-0 w-[220px]">
+                    <div className="bg-white/70 p-2 rounded-xl border border-stone-subtle">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-stone-text">Speed</span>
+                      <p className="text-sm font-bold text-espresso font-mono mt-0.5">
+                        {busData?.speed_kmh != null ? busData.speed_kmh.toFixed(1) : "--"} <span className="text-[10px] font-normal text-stone-text">km/h</span>
+                      </p>
+                    </div>
+                    <div className="bg-white/70 p-2 rounded-xl border border-stone-subtle">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-stone-text">Transport Status</span>
+                      <p className={`text-[11px] font-bold mt-0.5 ${delayStatus.tone === "bad" ? "text-red-700" : "text-emerald-700"}`}>
+                        {delayStatus.label}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-stone-subtle/70">
+                  <div className="flex items-center gap-3 text-[11px] text-stone-text min-w-0">
+                    <span className="flex items-center gap-1 shrink-0">
+                      <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-stone-400"}`} />
+                      Live GPS
+                    </span>
+                    <span className="font-mono text-[10px] truncate">{busData ? toIST(busData.timestamp) : "--"}</span>
+                    <span className="truncate hidden xl:inline">
+                      Upcoming: {(busData?.upcoming_stops ?? []).slice(0, 3).map(s => s.name).join(" · ") || "—"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSimulate}
+                    disabled={simulating}
+                    className="shrink-0 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-espresso text-white hover:bg-stone-dark disabled:opacity-60 transition-colors"
+                  >
+                    {simulating ? "Starting…" : simulateReverse ? "SIMULATE B01 ←" : "SIMULATE B01 →"}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -205,8 +296,8 @@ export default function StudentDashboard() {
                 <RouteIcon className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-espresso">Inspect All 5 Stops & Schedule</p>
-                <p className="text-[10px] text-stone-text">View corridor timetable & status</p>
+                <p className="text-xs font-bold text-espresso">Inspect Corridor Stops & Schedule</p>
+                <p className="text-[10px] text-stone-text">Live ETAs from the same road-distance pipeline</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-stone-text group-hover:translate-x-0.5 transition-transform" />
@@ -248,12 +339,15 @@ export default function StudentDashboard() {
                 <Bell className="w-3.5 h-3.5 text-terracotta" />
                 Transit Advisory
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
-                NORMAL
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${delayStatus.color}`}>
+                {delayStatus.label}
               </span>
             </div>
             <p className="text-xs text-stone-dark leading-relaxed">
-              Diamond Harbour Rd corridor flowing smoothly. Flyover ramp clear with no reported choke points.
+              {persistentAlerts[0]?.message
+                || (predictedDelay > 0
+                  ? `Calculated delay of +${predictedDelay} min is reflected in ETA and status.`
+                  : "Corridor flowing normally. Live ETA tracks remaining OSRM road distance.")}
             </p>
           </motion.div>
         </div>
@@ -474,6 +568,10 @@ export default function StudentDashboard() {
                 dynamicEta={dynamicEta}
                 speed={busData?.speed_kmh || 0}
                 predictedDelay={predictedDelay}
+                routeName={route.name || "Route R01"}
+                sourceName={routeSource}
+                destName={routeDestination}
+                statusLabel={delayStatus.label}
               />
             </motion.div>
           </motion.div>
@@ -551,25 +649,26 @@ export default function StudentDashboard() {
               </div>
 
               <div className="space-y-3">
-                <div className="p-3 bg-white rounded-xl border border-stone-subtle">
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded border border-emerald-200">
-                    STATUS: NORMAL
-                  </span>
-                  <p className="text-xs font-bold text-espresso mt-2">All 5 Corridor Checkpoints Clear</p>
-                  <p className="text-xs text-stone-dark mt-1">
-                    Telemetry is live at 15s refresh cadence. No weather disruptions or roadblocks reported.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-white rounded-xl border border-stone-subtle">
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-800 rounded border border-amber-200">
-                    EVENT NOTICE
-                  </span>
-                  <p className="text-xs font-bold text-espresso mt-2">Afternoon TechFest Dispatch</p>
-                  <p className="text-xs text-stone-dark mt-1">
-                    Special return shuttles will depart STCET Campus Gate at 4:30 PM, 5:15 PM, and 6:00 PM.
-                  </p>
-                </div>
+                {persistentAlerts.length === 0 && (
+                  <div className="p-3 bg-white rounded-xl border border-stone-subtle">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${delayStatus.color}`}>
+                      {delayStatus.label}
+                    </span>
+                    <p className="text-xs font-bold text-espresso mt-2">No active delay alerts</p>
+                    <p className="text-xs text-stone-dark mt-1">
+                      Calculated transport status mirrors the live ETA pipeline.
+                    </p>
+                  </div>
+                )}
+                {persistentAlerts.map((alert) => (
+                  <div key={alert.id} className="p-3 bg-white rounded-xl border border-red-200">
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-800 rounded border border-red-200">
+                      {alert.type}
+                    </span>
+                    <p className="text-xs font-bold text-espresso mt-2">{alert.message}</p>
+                    <p className="text-[10px] text-stone-text mt-1">{toIST(alert.timestamp)}</p>
+                  </div>
+                ))}
               </div>
             </motion.div>
           </motion.div>

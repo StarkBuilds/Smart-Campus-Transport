@@ -87,4 +87,38 @@ public class MlPredictionClient {
             return PredictionResponse.unavailable(busId, routeId, "ML prediction error: " + e.getMessage());
         }
     }
+
+    /**
+     * Fetch model metadata (architecture, metrics, features) from ML service.
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.Map<String, Object> getMetadata() {
+        try {
+            return restClient.get()
+                    .uri("/metadata")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(java.util.Map.class);
+        } catch (Exception e) {
+            log.warn("Failed to fetch ML metadata: {}", e.getMessage());
+            return java.util.Map.of("error", "ML metadata unavailable: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Trigger model validation against the held-out validation split.
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.Map<String, Object> runValidation() {
+        try {
+            return restClient.post()
+                    .uri("/validate")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .body(java.util.Map.class);
+        } catch (Exception e) {
+            log.warn("Failed to run ML validation: {}", e.getMessage());
+            return java.util.Map.of("error", "ML validation unavailable: " + e.getMessage());
+        }
+    }
 }

@@ -10,21 +10,17 @@ import Footer from "@/components/layout/Footer"
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: ["400", "500", "600", "700", "800"],
 })
 
 
 const newsreader = Newsreader({
   subsets: ["latin"],
   variable: "--font-serif",
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
 })
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["400", "500", "600", "700"],
 })
 
 export const metadata: Metadata = {
@@ -32,6 +28,11 @@ export const metadata: Metadata = {
   description:
     "Real-time GPS tracking and ML-powered delay predictions for St. Thomas' College of Engineering and Technology campus buses. Know when your bus arrives — before it does.",
   keywords: ["campus bus tracking", "STCET", "Khidderpore", "Kolkata", "real-time GPS", "delay prediction"],
+  icons: {
+    icon: "/assets/logo.png",
+    shortcut: "/assets/logo.png",
+    apple: "/assets/logo.png",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

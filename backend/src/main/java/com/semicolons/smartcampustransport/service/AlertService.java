@@ -219,6 +219,11 @@ public class AlertService {
                 LocalTime now = LocalTime.now();
                 long delayMinutes = Duration.between(scheduledArrival, now).toMinutes();
 
+                // Ignore stale timetable windows so overnight schedules cannot create +900 min alerts.
+                if (Math.abs(delayMinutes) > 90) {
+                    return;
+                }
+
                 if (delayMinutes > LATE_THRESHOLD_MINUTES) {
                     createLateBusAlert(request.busId(), request.routeId(),
                         request.tripId(), request.nextStopId(), delayMinutes);
@@ -228,16 +233,36 @@ public class AlertService {
             });
     }
 
+    /**
+     * Publish a persistent LATE_BUS alert from a real calculated delay (demo or schedule).
+     */
+    @Transactional
+    public void publishLateBusAlert(String busId, String routeId, String tripId, String stopId, long delayMinutes) {
+        createLateBusAlert(busId, routeId, tripId, stopId, delayMinutes);
+    }
+
+    @Transactional
+    public void resolveLateBusAlertPublic(String busId) {
+        resolveLateBusAlert(busId);
+    }
+
     private void createLateBusAlert(String busId, String routeId, String tripId, String stopId, long delayMinutes) {
+        String message = String.format(
+                "Bus %s is running %d minute%s late%s.",
+                busId,
+                delayMinutes,
+                delayMinutes == 1 ? "" : "s",
+                stopId != null && !stopId.isBlank() ? " approaching " + stopId : ""
+        );
         alertRepository.findByBusIdAndTypeAndStatus(
             busId,
             Alert.AlertType.LATE_BUS,
             Alert.AlertStatus.ACTIVE
         ).ifPresentOrElse(
             existing -> {
-                existing.setMessage(String.format("Bus is %d minutes behind schedule at stop %s",
-                    delayMinutes, stopId));
+                existing.setMessage(message);
                 existing.setTripId(tripId);
+                existing.setRouteId(routeId);
                 existing.setTimestamp(Instant.now());
                 alertRepository.save(existing);
             },
@@ -248,8 +273,7 @@ public class AlertService {
                     .tripId(tripId)
                     .type(Alert.AlertType.LATE_BUS)
                     .status(Alert.AlertStatus.ACTIVE)
-                    .message(String.format("Bus is %d minutes behind schedule at stop %s",
-                        delayMinutes, stopId))
+                    .message(message)
                     .timestamp(Instant.now())
                     .build();
                 alertRepository.save(alert);

@@ -52,21 +52,19 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/error").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/api/buses/**", "/api/routes/**").permitAll() // Added to unblock frontend dashboard
+                .requestMatchers("/api/buses/**", "/api/routes/**", "/api/alerts").permitAll()
+                .requestMatchers("/api/ml/**").hasRole("ADMIN")
 
                 // ADMIN only: Management endpoints
                 .requestMatchers("/api/bus-events").hasRole("ADMIN")
                 .requestMatchers("/api/schedules").hasRole("ADMIN")
                 .requestMatchers("/api/schedules/**").hasRole("ADMIN")
-                .requestMatchers("/api/trips").hasAnyRole("STUDENT", "ADMIN")  // Read for both
-                .requestMatchers("/api/trips/**").hasRole("ADMIN")  // Write for admin only
+                .requestMatchers("/api/trips").hasAnyRole("STUDENT", "ADMIN")
+                .requestMatchers("/api/trips/**").hasRole("ADMIN")
                 .requestMatchers("/api/assignments").hasRole("ADMIN")
                 .requestMatchers("/api/stops/**").hasRole("ADMIN")
 
-                // STUDENT and ADMIN: Read APIs
-                .requestMatchers("/api/buses/**").hasAnyRole("STUDENT", "ADMIN")
-                .requestMatchers("/api/routes/**").hasAnyRole("STUDENT", "ADMIN")
-                .requestMatchers("/api/alerts").hasAnyRole("STUDENT", "ADMIN")
+                // Authenticated student transport profile
                 .requestMatchers("/api/my/transport").hasAnyRole("STUDENT", "ADMIN")
 
                 // All other requests require authentication
