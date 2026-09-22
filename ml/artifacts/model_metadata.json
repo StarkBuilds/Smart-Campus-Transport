@@ -1,0 +1,42 @@
+{
+  "model_version": "1.0.0",
+  "trained_at": "2026-09-20T06:36:20.924409+00:00",
+  "train_size": 17469,
+  "validation_size": 3743,
+  "test_size": 3744,
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 6,
+    "learning_rate": 0.08,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "objective": "reg:squarederror",
+    "early_stopping_rounds": 15
+  },
+  "baseline_metrics": {
+    "validation": {
+      "mae": 6.269996907708745,
+      "rmse": 8.756516508564914,
+      "r2": -0.005130123676054366
+    },
+    "test": {
+      "mae": 7.181420032519142,
+      "rmse": 10.226158608596666,
+      "r2": -0.053081058809530735
+    },
+    "train_mean_delay_predicted": 8.038078310149407
+  },
+  "model_metrics": {
+    "validation": {
+      "mae": 3.602752441158615,
+      "rmse": 5.730178785257495,
+      "r2": 0.5695765816316196
+    },
+    "test": {
+      "mae": 4.6501160100109065,
+      "rmse": 6.8767447805983,
+      "r2": 0.5237855539854686
+    }
+  }
+}

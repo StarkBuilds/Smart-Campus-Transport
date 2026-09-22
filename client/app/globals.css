@@ -60,65 +60,65 @@
 }
 
 /* ============================================
-   DARK THEME — Deep Space Navy
-   This is the only theme we use (dark mode always on)
+   ROYAL LIGHT THEME — Luxury Linen & Warm Alabaster
+   Refined high-fashion palette matching the campus fleet aesthetic
    ============================================ */
 :root {
-  /* Deep space backgrounds */
-  --background: oklch(0.07 0.015 240);       /* #060B18 — page base */
-  --foreground: oklch(0.94 0.01 240);        /* #F0F4F8 — main text */
+  /* Warm linen and alabaster backgrounds */
+  --background: #F6F4EE;
+  --foreground: #1C1917;
 
-  /* Card surfaces */
-  --card: oklch(0.11 0.018 240);             /* #0D1421 — card bg */
-  --card-foreground: oklch(0.94 0.01 240);
+  /* Elevated card surfaces */
+  --card: #FFFFFF;
+  --card-foreground: #1C1917;
 
   /* Popover / dropdown surfaces */
-  --popover: oklch(0.13 0.018 240);          /* #111827 */
-  --popover-foreground: oklch(0.94 0.01 240);
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1917;
 
-  /* Electric Cyan — the primary interactive color */
-  --primary: oklch(0.78 0.15 200);           /* #00C8FF */
-  --primary-foreground: oklch(0.07 0.015 240);
+  /* Royal Amber Gold — primary interactive color */
+  --primary: #B45309;
+  --primary-foreground: #FFFFFF;
 
-  /* Muted secondary elements */
-  --secondary: oklch(0.18 0.02 240);
-  --secondary-foreground: oklch(0.85 0.01 240);
+  /* Warm secondary surfaces */
+  --secondary: #FAF8F5;
+  --secondary-foreground: #44403C;
 
-  /* Dimmed / subdued text and backgrounds */
-  --muted: oklch(0.16 0.018 240);
-  --muted-foreground: oklch(0.55 0.02 240);  /* #8BA8C4 — labels */
+  /* Dimmed / subdued text and warm stone backgrounds */
+  --muted: #F5F2EB;
+  --muted-foreground: #78716C;
 
-  /* Accent — subtle hover states */
-  --accent: oklch(0.20 0.02 240);
-  --accent-foreground: oklch(0.94 0.01 240);
+  /* Accent — warm champagne highlight */
+  --accent: #FEF3C7;
+  --accent-foreground: #92400E;
 
   /* Danger / destructive */
-  --destructive: oklch(0.60 0.22 25);        /* #EF4444 */
+  --destructive: #DC2626;
 
-  /* Borders */
-  --border: oklch(0.25 0.02 240 / 60%);
-  --input: oklch(0.20 0.02 240);
-  --ring: oklch(0.78 0.15 200 / 40%);
+  /* Warm tailored borders */
+  --border: #DDD7CB;
+  --input: #DDD7CB;
+  --ring: rgba(180, 83, 9, 0.35);
 
   /* Border radius base */
   --radius: 0.75rem;
 
   /* Analytics chart colors */
-  --chart-1: oklch(0.78 0.15 200);           /* cyan — primary metric */
-  --chart-2: oklch(0.70 0.18 70);            /* amber — delays */
-  --chart-3: oklch(0.60 0.15 160);           /* emerald — on time */
-  --chart-4: oklch(0.60 0.22 25);            /* red — missed */
-  --chart-5: oklch(0.55 0.20 280);           /* purple — predicted */
+  --chart-1: #B45309;
+  --chart-2: #D97706;
+  --chart-3: #10B981;
+  --chart-4: #EF4444;
+  --chart-5: #8B5CF6;
 
   /* Dashboard sidebar */
-  --sidebar: oklch(0.09 0.018 240);
-  --sidebar-foreground: oklch(0.94 0.01 240);
-  --sidebar-primary: oklch(0.78 0.15 200);
-  --sidebar-primary-foreground: oklch(0.07 0.015 240);
-  --sidebar-accent: oklch(0.18 0.02 240);
-  --sidebar-accent-foreground: oklch(0.94 0.01 240);
-  --sidebar-border: oklch(0.25 0.02 240 / 40%);
-  --sidebar-ring: oklch(0.78 0.15 200 / 40%);
+  --sidebar: #FAF8F5;
+  --sidebar-foreground: #1C1917;
+  --sidebar-primary: #B45309;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FEF3C7;
+  --sidebar-accent-foreground: #92400E;
+  --sidebar-border: #DDD7CB;
+  --sidebar-ring: rgba(180, 83, 9, 0.35);
 }
 
 /* ============================================
@@ -150,7 +150,7 @@
     cursor: none;
   }
 
-  /* Scrollbar styling to match dark theme */
+  /* Scrollbar styling to match warm luxury theme */
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -159,11 +159,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.78 0.15 200 / 30%);
+    background: #DDD7CB;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.78 0.15 200 / 60%);
+    background: #B45309;
   }
 
   button:not(:disabled), [role="button"]:not(:disabled) {
@@ -176,41 +176,41 @@
    Used across multiple components
    ============================================ */
 @layer utilities {
-  /* Glassmorphism card effect */
+  /* Clean royal glassmorphism card effect */
   .glass {
-    background: oklch(0.11 0.018 240 / 70%);
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid oklch(0.78 0.15 200 / 15%);
+    border: 1px solid #DDD7CB;
   }
 
   /* Stronger glass for hero elements */
   .glass-strong {
-    background: oklch(0.13 0.018 240 / 80%);
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid oklch(0.78 0.15 200 / 25%);
+    border: 1px solid #DDD7CB;
   }
 
-  /* Glowing cyan border — used on status badges and live indicators */
+  /* Glowing warm amber border — used on status badges and live indicators */
   .glow-cyan {
-    box-shadow: 0 0 20px oklch(0.78 0.15 200 / 30%), 0 0 40px oklch(0.78 0.15 200 / 10%);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3), 0 0 32px rgba(245, 158, 11, 0.1);
   }
 
   .glow-cyan-strong {
-    box-shadow: 0 0 30px oklch(0.78 0.15 200 / 50%), 0 0 60px oklch(0.78 0.15 200 / 20%);
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.45), 0 0 48px rgba(245, 158, 11, 0.2);
   }
 
   /* Text gradient — used for headings */
   .text-gradient {
-    background: linear-gradient(135deg, #fff 0%, #00C8FF 50%, #7C3AED 100%);
+    background: linear-gradient(135deg, #1C1917 0%, #B45309 60%, #92400E 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-cyan {
-    background: linear-gradient(90deg, #00C8FF, #7EFF6E);
+    background: linear-gradient(90deg, #B45309, #D97706);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
