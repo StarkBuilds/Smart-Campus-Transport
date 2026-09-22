@@ -13,7 +13,7 @@ import java.util.List;
 import java.time.Duration;
 
 /**
- * Genuine schedule delay only — ignores stale timetable mismatches.
+ * Genuine schedule delay — predicted arrival vs timetable for a specific stop.
  */
 @Component
 @RequiredArgsConstructor
@@ -23,16 +23,27 @@ public class DelayCalculator {
 
     private final ScheduleRepository scheduleRepository;
 
+    /**
+     * Delay at a stop based on wall-clock "now" vs scheduled arrival (legacy).
+     */
     public int calculateDelayMinutes(String routeId, RouteStop currentStop) {
-        if (currentStop == null) return 0;
+        return calculateArrivalDelayMinutes(routeId, currentStop, 0);
+    }
+
+    /**
+     * Delay = (now + etaMinutesFromNow) − scheduledArrival at the given stop.
+     * Positive = late, negative = early. Returns 0 when no nearby timetable window.
+     */
+    public int calculateArrivalDelayMinutes(String routeId, RouteStop targetStop, int etaMinutesFromNow) {
+        if (targetStop == null) return 0;
 
         List<Schedule> activeSchedules = scheduleRepository.findActiveSchedulesForRouteOnDate(routeId, LocalDate.now());
         if (activeSchedules.isEmpty()) {
             return 0;
         }
 
-        LocalTime now = LocalTime.now(ZoneId.systemDefault());
-        Integer stopOffset = currentStop.getArrivalOffsetMinutes();
+        LocalTime predictedArrival = LocalTime.now(ZoneId.systemDefault()).plusMinutes(Math.max(0, etaMinutesFromNow));
+        Integer stopOffset = targetStop.getArrivalOffsetMinutes();
         if (stopOffset == null) stopOffset = 0;
 
         Schedule bestSchedule = null;
@@ -40,9 +51,8 @@ public class DelayCalculator {
 
         for (Schedule s : activeSchedules) {
             LocalTime scheduledArrival = s.getDepartureTime().plusMinutes(stopOffset);
-            long diff = Duration.between(scheduledArrival, now).toMinutes();
+            long diff = Duration.between(scheduledArrival, predictedArrival).toMinutes();
             long abs = Math.abs(diff);
-            // Only consider timetable windows near "now" so overnight/stale schedules don't fabricate +900 min delays.
             if (abs <= MAX_RELEVANT_ABS_MINUTES && abs < minAbsDiff) {
                 minAbsDiff = abs;
                 bestSchedule = s;
@@ -54,7 +64,7 @@ public class DelayCalculator {
         }
 
         LocalTime scheduledArrival = bestSchedule.getDepartureTime().plusMinutes(stopOffset);
-        long delay = Duration.between(scheduledArrival, now).toMinutes();
+        long delay = Duration.between(scheduledArrival, predictedArrival).toMinutes();
         if (Math.abs(delay) > MAX_RELEVANT_ABS_MINUTES) {
             return 0;
         }

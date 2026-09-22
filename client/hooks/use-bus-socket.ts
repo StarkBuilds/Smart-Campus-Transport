@@ -55,11 +55,9 @@ export function useBusSocket(): UseBusSocketResult {
             }
           }
 
-          // Prefer backend delayMinutes (already used once in final ETA); ML may raise status.
-          const delayMinutes = Math.max(
-            data.delayMinutes ?? 0,
-            predictedDelay ?? 0
-          )
+          // Prefer backend delayMinutes (journey) — already merged with ML once server-side.
+          const delayMinutes = data.delayMinutes ?? predictedDelay ?? 0
+          const nextStopDelayMinutes = data.nextStopDelayMinutes ?? 0
 
           const newTarget: LiveBusData = {
             bus_id: data.busId || "B01",
@@ -69,17 +67,18 @@ export function useBusSocket(): UseBusSocketResult {
             latitude: data.latestLatitude || 22.4988,
             longitude: data.latestLongitude || 88.3245,
             bearing: data.bearing || 0,
-            speed_kmh: data.latestSpeedKmh || 0,
+            speed_kmh: data.latestSpeedKmh ?? 0,
             accuracy_m: 5,
             status: data.status || "IN_SERVICE",
             next_stop_id: data.nextStop?.stopId || "",
             delay_minutes: delayMinutes,
+            next_stop_delay_minutes: nextStopDelayMinutes,
             eta_minutes: data.etaMinutes ?? 0,
             current_stop: data.currentStop,
             next_stop: data.nextStop,
             upcoming_stops: data.upcomingStops ?? [],
             features: {
-               predicted_delay_minutes: delayMinutes,
+               predicted_delay_minutes: predictedDelay ?? delayMinutes,
                ml_confidence: mlConfidence,
                is_morning_rush: false,
                distance_from_last_ping_meters: 0,
@@ -124,6 +123,7 @@ export function useBusSocket(): UseBusSocketResult {
         current.status = target.status
         current.eta_minutes = target.eta_minutes
         current.delay_minutes = target.delay_minutes
+        current.next_stop_delay_minutes = target.next_stop_delay_minutes
         current.current_stop = target.current_stop
         current.next_stop = target.next_stop
         current.upcoming_stops = target.upcoming_stops

@@ -13,6 +13,7 @@ export default function RoutesPage() {
   const [error, setError] = useState<string | null>(null)
   const [liveEtas, setLiveEtas] = useState<LiveStopEta>({})
   const [delayMinutes, setDelayMinutes] = useState(0)
+  const [nextStopDelayMinutes, setNextStopDelayMinutes] = useState(0)
   const [currentStopId, setCurrentStopId] = useState<string | null>(null)
   const [nextStopId, setNextStopId] = useState<string | null>(null)
   const [sourceName, setSourceName] = useState("Source")
@@ -46,6 +47,7 @@ export default function RoutesPage() {
         const bus = await res.json()
         if (cancelled) return
         setDelayMinutes(bus.delayMinutes ?? 0)
+        setNextStopDelayMinutes(bus.nextStopDelayMinutes ?? 0)
         setCurrentStopId(bus.currentStop?.stopId ?? null)
         setNextStopId(bus.nextStop?.stopId ?? null)
         const map: LiveStopEta = {}
@@ -75,6 +77,13 @@ export default function RoutesPage() {
     if (Math.abs(d) < 1) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
     if (d > 0) return { label: `DELAYED · +${d} min`, color: "text-amber-800 bg-amber-50 border-amber-200" }
     return { label: `EARLY · ${Math.abs(d)} min early`, color: "text-emerald-700 bg-emerald-50 border-emerald-200" }
+  }
+
+  const nextStopDelayLabel = () => {
+    const d = Math.round(nextStopDelayMinutes)
+    if (Math.abs(d) < 1) return "ON TIME"
+    if (d > 0) return `DELAYED +${d} min`
+    return `EARLY ${Math.abs(d)} min`
   }
 
   const status = statusLabel()
@@ -166,7 +175,14 @@ export default function RoutesPage() {
                                 <p className="font-semibold text-espresso text-sm flex items-center gap-1.5">
                                   {stop.name}
                                   {isCurrent && <span className="text-[10px] text-emerald-700 font-bold">CURRENT</span>}
-                                  {isNext && !isCurrent && <span className="text-[10px] text-terracotta font-bold">NEXT</span>}
+                                  {isNext && !isCurrent && (
+                                    <>
+                                      <span className="text-[10px] text-terracotta font-bold">NEXT</span>
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-stone-subtle bg-parchment">
+                                        {nextStopDelayLabel()}
+                                      </span>
+                                    </>
+                                  )}
                                 </p>
                                 <p className="text-xs font-mono text-stone-medium mt-0.5">
                                   {stop.latitude.toFixed(4)}, {stop.longitude.toFixed(4)}

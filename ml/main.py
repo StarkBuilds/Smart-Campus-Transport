@@ -57,6 +57,14 @@ def metadata():
     return jsonify(meta_resp.model_dump(by_alias=True, mode="json")), 200
 
 
+@app.route("/validate", methods=["POST", "GET"])
+def validate_model():
+    """Re-run evaluation on the held-out validation split using existing training data."""
+    result = predictor.run_validation()
+    status = 200 if not result.error or result.sample_count > 0 else 503
+    return jsonify(result.model_dump(by_alias=True, mode="json")), status
+
+
 @app.route("/predict", methods=["POST"])
 def predict():
     """

@@ -23,6 +23,7 @@ from ml.schemas import (
     ModelHealthResponse,
     ModelHealthStatus,
     ModelMetadataResponse,
+    ModelValidationResponse,
     PredictionRequest,
     PredictionResponse,
 )
@@ -181,8 +182,11 @@ class DelayPredictor:
         """Return active model metadata."""
         metrics = None
         if "model_metrics" in self.metadata:
-            test_metrics = self.metadata["model_metrics"].get("test", {})
-            metrics = {k: float(v) for k, v in test_metrics.items()}
+            # Prefer validation metrics for admin analytics.
+            val_metrics = self.metadata["model_metrics"].get("validation") or {}
+            test_metrics = self.metadata["model_metrics"].get("test") or {}
+            source = val_metrics if val_metrics else test_metrics
+            metrics = {k: float(v) for k, v in source.items()}
 
         trained_at = None
         if "trained_at" in self.metadata:
@@ -191,6 +195,12 @@ class DelayPredictor:
             except (ValueError, TypeError):
                 trained_at = None
 
+        validation_size = self.metadata.get("validation_size")
+        try:
+            validation_size = int(validation_size) if validation_size is not None else None
+        except (TypeError, ValueError):
+            validation_size = None
+
         return ModelMetadataResponse(
             model_name="delay_xgb",
             model_version=self.model_version,
@@ -198,4 +208,89 @@ class DelayPredictor:
             features_used=self.feature_manifest or [],
             trained_at=trained_at,
             metrics=metrics,
+            prediction_target="delay_next_stop_minutes",
+            validation_size=validation_size,
         )
+
+    def run_validation(self, max_chart_points: int = 80) -> ModelValidationResponse:
+        """
+        Re-evaluate the loaded model on the chronological validation split
+        from the existing processed training parquet (same pipeline as train_model.py).
+        """
+        if not self.is_ready or self.model is None or self.fe is None:
+            return ModelValidationResponse(
+                mae=0.0, rmse=0.0, r2=0.0, sample_count=0,
+                error="Model artifacts not loaded",
+            )
+
+        data_path = Path(__file__).resolve().parent / "data" / "processed" / "clean_bus_events.parquet"
+        if not data_path.is_file():
+            # Fall back to stored validation metrics when parquet is unavailable.
+            stored = (self.metadata.get("model_metrics") or {}).get("validation") or {}
+            if stored:
+                return ModelValidationResponse(
+                    mae=float(stored.get("mae", 0)),
+                    rmse=float(stored.get("rmse", 0)),
+                    r2=float(stored.get("r2", 0)),
+                    sample_count=int(self.metadata.get("validation_size") or 0),
+                    actual=[],
+                    predicted=[],
+                )
+            return ModelValidationResponse(
+                mae=0.0, rmse=0.0, r2=0.0, sample_count=0,
+                error=f"Validation dataset missing at {data_path}",
+            )
+
+        try:
+            from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+            from ml.geospatial_features import enrich_geospatial_features
+            import numpy as np
+
+            df = pd.read_parquet(data_path)
+            df = enrich_geospatial_features(df)
+            X, y = self.fe.transform_dataframe(df, is_training=True)
+            n = len(X)
+            train_end = int(n * 0.7)
+            val_end = int(n * 0.85)
+            X_val = X.iloc[train_end:val_end]
+            y_val = y.iloc[train_end:val_end]
+
+            if hasattr(self.model, "predict"):
+                y_pred = np.asarray(self.model.predict(X_val), dtype=float)
+            else:
+                dmat = xgb.DMatrix(X_val)
+                y_pred = np.asarray(self.model.predict(dmat), dtype=float)
+
+            y_true = np.asarray(y_val, dtype=float)
+            mae = float(mean_absolute_error(y_true, y_pred))
+            rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+            r2 = float(r2_score(y_true, y_pred))
+
+            # Downsample for chart payload
+            step = max(1, len(y_true) // max_chart_points)
+            actual = y_true[::step][:max_chart_points].tolist()
+            predicted = y_pred[::step][:max_chart_points].tolist()
+
+            return ModelValidationResponse(
+                mae=mae,
+                rmse=rmse,
+                r2=r2,
+                sample_count=int(len(y_true)),
+                actual=actual,
+                predicted=predicted,
+            )
+        except Exception as exc:
+            logger.error("Validation failed: %s", exc, exc_info=True)
+            stored = (self.metadata.get("model_metrics") or {}).get("validation") or {}
+            if stored:
+                return ModelValidationResponse(
+                    mae=float(stored.get("mae", 0)),
+                    rmse=float(stored.get("rmse", 0)),
+                    r2=float(stored.get("r2", 0)),
+                    sample_count=int(self.metadata.get("validation_size") or 0),
+                    error=f"Live validation failed ({exc}); showing stored metrics",
+                )
+            return ModelValidationResponse(
+                mae=0.0, rmse=0.0, r2=0.0, sample_count=0,
+                error=str(exc),
+            )

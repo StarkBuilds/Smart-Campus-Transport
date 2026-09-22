@@ -217,3 +217,26 @@ class ModelMetadataResponse(BaseModel):
     features_used: List[str] = Field(default_factory=list, description="List of feature names consumed by the model")
     trained_at: Optional[datetime] = Field(default=None, description="Timestamp when the model was trained")
     metrics: Optional[Dict[str, float]] = Field(default=None, description="Evaluation metrics on validation set")
+    prediction_target: str = Field(
+        default="delay_next_stop_minutes",
+        description="Regression target predicted by the model",
+    )
+    validation_size: Optional[int] = Field(default=None, description="Number of validation samples used at train time")
+
+
+class ModelValidationResponse(BaseModel):
+    """Result of re-running evaluation on the held-out validation split."""
+    model_config = ConfigDict(
+        populate_by_name=True,
+        str_strip_whitespace=True,
+    )
+
+    mae: float = Field(..., description="Mean absolute error on validation split (minutes)")
+    rmse: float = Field(..., description="Root mean squared error on validation split (minutes)")
+    r2: float = Field(..., description="Coefficient of determination on validation split")
+    sample_count: int = Field(..., description="Number of validation samples evaluated")
+    actual: List[float] = Field(default_factory=list, description="Actual delay values (sampled for chart)")
+    predicted: List[float] = Field(default_factory=list, description="Predicted delay values (sampled for chart)")
+    model_type: str = Field(default="XGBoostRegressor")
+    prediction_target: str = Field(default="delay_next_stop_minutes")
+    error: Optional[str] = Field(default=None, description="Error message if validation could not run")

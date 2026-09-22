@@ -116,6 +116,7 @@ export default function LiveMap({
   const [sourceAndDest, setSourceAndDest] = useState<{source: StopInfo | null, dest: StopInfo | null}>({source: null, dest: null})
   
   const [isLoading, setIsLoading] = useState(true)
+  const [mapZoom, setMapZoom] = useState(MAP_DEFAULT_ZOOM)
 
   // Needs map click handling to report longitude/latitude
   const handleMapClick = useCallback((e: maplibregl.MapMouseEvent) => {
@@ -181,6 +182,10 @@ export default function LiveMap({
     onStopClick?.(stopId)
   }
 
+  // Responsive overhead bus size — small/realistic, scales with zoom, keeps aspect ratio.
+  const busWidth = Math.max(22, Math.min(52, 14 + (mapZoom - 12) * 5))
+  const busHeight = busWidth * (96 / 44)
+
   return (
     <div className="relative w-full h-full bg-parchment overflow-hidden">
       <Map
@@ -198,6 +203,8 @@ export default function LiveMap({
         attributionControl={{ compact: false }}
         onClick={handleMapClick}
         onLoad={() => setMapLoaded(true)}
+        onMove={(evt) => setMapZoom(evt.viewState.zoom)}
+        onZoom={(evt) => setMapZoom(evt.viewState.zoom)}
         onError={(e) => {
           console.warn("Map warn:", e)
           setMapLoaded(true)
@@ -291,30 +298,31 @@ export default function LiveMap({
             )
           })}
 
-          {/* Live bus marker — transparent overhead asset, front = UP */}
+          {/* Live bus marker — transparent overhead asset, front = UP, no circle behind */}
           {busData && (
             <Marker longitude={busData.longitude} latitude={busData.latitude} anchor="center">
               <div className="relative flex flex-col items-center justify-center cursor-pointer pointer-events-none">
-                <div className="absolute -top-9 whitespace-nowrap rounded-full px-2.5 py-0.5 border border-stone-subtle shadow-md flex items-center gap-1.5 z-20 bg-white/95">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[11px] font-bold text-espresso tracking-wide">Bus B01</span>
-                  <span className="text-[10px] font-mono text-terracotta font-bold">{busData.speed_kmh.toFixed(0)} km/h</span>
+                <div className="absolute -top-8 whitespace-nowrap rounded-full px-2 py-0.5 border border-stone-subtle shadow-md flex items-center gap-1.5 z-20 bg-white/95">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-espresso tracking-wide">Bus B01</span>
+                  <span className="text-[10px] font-mono text-terracotta font-bold">{Math.round(busData.speed_kmh)} km/h</span>
                 </div>
 
                 <div
                   className="relative z-10 transition-transform duration-200 ease-out"
                   style={{
-                    width: 44,
-                    height: 96,
+                    width: busWidth,
+                    height: busHeight,
                     transform: `rotate(${busData.bearing}deg)`,
                     transformOrigin: "center center",
+                    background: "transparent",
                   }}
                 >
                   <Image
                     src="/assets/bus-topview.png"
                     alt="Bus B01"
-                    width={44}
-                    height={96}
+                    width={Math.round(busWidth)}
+                    height={Math.round(busHeight)}
                     priority
                     unoptimized
                     style={{
@@ -331,8 +339,19 @@ export default function LiveMap({
           )}
       </Map>
 
-      {/* Zoom Controls Repositioned */}
+      {/* Recenter ABOVE zoom so it is immediately accessible */}
       <div className="absolute bottom-6 right-4 z-40 flex flex-col gap-2 pointer-events-auto">
+        {busData && (
+          <button
+            type="button"
+            onClick={centerOnBus}
+            title="Center on bus"
+            className="w-10 h-10 rounded-xl border border-stone-subtle flex items-center justify-center hover:bg-parchment-warm transition-all shadow-md bg-white/90 backdrop-blur-md text-espresso cursor-pointer"
+          >
+            <Navigation className="w-5 h-5 text-terracotta" />
+          </button>
+        )}
+
         <div className="flex flex-col rounded-xl overflow-hidden border border-stone-subtle shadow-md bg-white/90 backdrop-blur-md">
           <button
             type="button"
@@ -351,17 +370,6 @@ export default function LiveMap({
             &minus;
           </button>
         </div>
-
-        {busData && (
-          <button
-            type="button"
-            onClick={centerOnBus}
-            title="Center on bus"
-            className="w-10 h-10 rounded-xl border border-stone-subtle flex items-center justify-center hover:bg-parchment-warm transition-all shadow-md bg-white/90 backdrop-blur-md text-espresso cursor-pointer mt-2"
-          >
-            <Navigation className="w-5 h-5 text-terracotta" />
-          </button>
-        )}
       </div>
 
       <AnimatePresence>

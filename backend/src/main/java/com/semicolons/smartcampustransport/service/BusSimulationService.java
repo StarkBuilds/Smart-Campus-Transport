@@ -25,13 +25,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BusSimulationService {
 
+    /** When true, cruise speed is reduced so remaining road-time creates a real timing deviation. */
     public static volatile boolean DEMO_DELAY_ACTIVE = false;
+    /** Intended journey delay minutes used to derive cruise speed (not a frozen UI stamp). */
     public static volatile int demoDelayMinutes = 0;
+    public static final double NOMINAL_SPEED_KMH = 28.0;
 
     private static final String ROUTE_ID = "R01";
     private static final String BUS_ID = "B01";
-    private static final double DEFAULT_SPEED_KMH = 28.0;
     private static final double STOP_ARRIVAL_RADIUS_M = 55.0;
+    private static final double STOP_DWELL_SECONDS = 8.0;
+    private static final double APPROACH_SLOW_RADIUS_M = 120.0;
 
     private final BusEventService busEventService;
     private final RouteGeometryService routeGeometryService;
@@ -59,10 +63,13 @@ public class BusSimulationService {
     private double distanceAlongMeters = 0.0;
     private boolean reverse = false;
     private boolean running = true;
-    private double speedKmh = DEFAULT_SPEED_KMH;
+    private double cruiseSpeedKmh = NOMINAL_SPEED_KMH;
+    private double speedKmh = NOMINAL_SPEED_KMH;
     private long lastUpdateTime = System.currentTimeMillis();
     private int nextStopIndex = 0;
     private boolean delayAlertPublished = false;
+    private double dwellRemainingSeconds = 0.0;
+    private int lastDwelledStopIndex = -1;
 
     @PostConstruct
     public void init() {
@@ -71,17 +78,21 @@ public class BusSimulationService {
         reverse = false;
         nextStopIndex = 0;
         lastUpdateTime = System.currentTimeMillis();
+        DEMO_DELAY_ACTIVE = false;
+        demoDelayMinutes = 0;
     }
 
     /**
      * Demo control: run SOURCE → DESTINATION (or reversed) on the fixed OSRM path.
+     * Intended delay is realized by slowing cruise speed over remaining road distance.
      */
     public synchronized void startDemo(boolean reverseDirection) {
         ensureFixedGeometry();
         this.reverse = reverseDirection;
         this.running = true;
-        this.speedKmh = DEFAULT_SPEED_KMH + (Math.random() * 6.0 - 3.0);
         this.lastUpdateTime = System.currentTimeMillis();
+        this.dwellRemainingSeconds = 0;
+        this.lastDwelledStopIndex = -1;
 
         if (reverseDirection) {
             this.distanceAlongMeters = totalLengthMeters;
@@ -91,10 +102,18 @@ public class BusSimulationService {
             this.nextStopIndex = 0;
         }
 
-        // Apply a genuine delay once for this demo run (feeds ETA + status + alert).
+        // Genuine timing deviation: 2–5 min intended, realized via ONE reduced cruise speed for the trip.
         DEMO_DELAY_ACTIVE = true;
-        demoDelayMinutes = 3 + (int) (Math.random() * 5);
+        demoDelayMinutes = 2 + (int) (Math.random() * 4);
         delayAlertPublished = false;
+
+        double remainingM = reverseDirection ? totalLengthMeters : totalLengthMeters;
+        double remainingKm = Math.max(0.2, remainingM / 1000.0);
+        double nominalHours = remainingKm / NOMINAL_SPEED_KMH;
+        double targetHours = nominalHours + (demoDelayMinutes / 60.0);
+        this.cruiseSpeedKmh = Math.max(12.0, Math.min(NOMINAL_SPEED_KMH - 1.0, remainingKm / Math.max(targetHours, 1e-4)));
+        this.speedKmh = cruiseSpeedKmh;
+
         try {
             alertService.publishLateBusAlert(
                     BUS_ID,
@@ -108,34 +127,16 @@ public class BusSimulationService {
             log.warn("Could not publish demo delay alert: {}", e.getMessage());
         }
 
-        log.info("SIMULATE B01 started reverse={} speed={}km/h delay=+{}m",
-                reverseDirection, String.format("%.1f", speedKmh), demoDelayMinutes);
+        log.info("SIMULATE B01 started reverse={} cruise={}km/h intendedDelay=+{}m",
+                reverseDirection, String.format("%.1f", cruiseSpeedKmh), demoDelayMinutes);
 
-        // Immediately publish the reset position so the map/ETA don't lag a full tick.
-        try {
-            Point position = interpolateAt(distanceAlongMeters);
-            double bearing = bearingAt(distanceAlongMeters);
-            busEventService.ingestEvent(new BusLocationEventRequest(
-                    BUS_ID,
-                    ROUTE_ID,
-                    "TRIP-01",
-                    Instant.now().toString(),
-                    position.lat,
-                    position.lon,
-                    bearing,
-                    speedKmh,
-                    5.0,
-                    "IN_SERVICE",
-                    resolveNextStopId()
-            ));
-        } catch (Exception e) {
-            log.warn("Could not publish demo start position: {}", e.getMessage());
-        }
+        publishPosition();
     }
 
     public synchronized void clearDemoDelay() {
         DEMO_DELAY_ACTIVE = false;
         demoDelayMinutes = 0;
+        cruiseSpeedKmh = NOMINAL_SPEED_KMH;
         delayAlertPublished = false;
         alertService.resolveLateBusAlertPublic(BUS_ID);
     }
@@ -146,6 +147,10 @@ public class BusSimulationService {
 
     public boolean isRunning() {
         return running;
+    }
+
+    public double getCruiseSpeedKmh() {
+        return cruiseSpeedKmh;
     }
 
     /** Called when stop sequence changes (e.g. admin adds a stop). */
@@ -170,56 +175,125 @@ public class BusSimulationService {
             double timeDeltaSeconds = Math.min(2.0, Math.max(0.05, (currentTime - lastUpdateTime) / 1000.0));
             lastUpdateTime = currentTime;
 
+            // Brief dwell at canonical stops — speed drops to ~0, then resumes.
+            if (dwellRemainingSeconds > 0) {
+                dwellRemainingSeconds = Math.max(0, dwellRemainingSeconds - timeDeltaSeconds);
+                speedKmh = 0.0;
+                publishPosition();
+                return;
+            }
+
+            // Keep demo cruise speed fixed for the trip (do not recompute each tick).
+            if (!DEMO_DELAY_ACTIVE) {
+                cruiseSpeedKmh = NOMINAL_SPEED_KMH;
+            }
+            speedKmh = computeInstantSpeed();
+
             double deltaMeters = (speedKmh * 1000.0 / 3600.0) * timeDeltaSeconds;
+            // Monotonic progress along the fixed path (no overshoot/backtrack within a tick).
             if (reverse) {
-                distanceAlongMeters -= deltaMeters;
+                distanceAlongMeters = Math.max(0, distanceAlongMeters - deltaMeters);
                 if (distanceAlongMeters <= 0) {
                     distanceAlongMeters = 0;
+                    // End of reverse trip — clear demo stamp; next outbound starts clean.
+                    if (DEMO_DELAY_ACTIVE) {
+                        clearDemoDelay();
+                    }
                     reverse = false;
                     nextStopIndex = 0;
+                    cruiseSpeedKmh = NOMINAL_SPEED_KMH;
                 }
             } else {
-                distanceAlongMeters += deltaMeters;
+                distanceAlongMeters = Math.min(totalLengthMeters, distanceAlongMeters + deltaMeters);
                 if (distanceAlongMeters >= totalLengthMeters) {
                     distanceAlongMeters = totalLengthMeters;
+                    if (DEMO_DELAY_ACTIVE) {
+                        clearDemoDelay();
+                    }
                     reverse = true;
                     nextStopIndex = Math.max(0, b01Stops.size() - 1);
+                    cruiseSpeedKmh = NOMINAL_SPEED_KMH;
                 }
             }
 
             Point position = interpolateAt(distanceAlongMeters);
-            double bearing = bearingAt(distanceAlongMeters);
             updateNextStopIndex(position);
+            maybeStartDwell();
 
+            publishPosition();
+        }
+    }
+
+    private void publishPosition() {
+        try {
+            Point position = interpolateAt(distanceAlongMeters);
+            double bearing = bearingAt(distanceAlongMeters);
             String nextStopId = resolveNextStopId();
+            BusLocationEventRequest request = new BusLocationEventRequest(
+                    BUS_ID,
+                    ROUTE_ID,
+                    "TRIP-01",
+                    Instant.now().toString(),
+                    position.lat,
+                    position.lon,
+                    bearing,
+                    speedKmh,
+                    5.0,
+                    "IN_SERVICE",
+                    nextStopId
+            );
+            busEventService.ingestEvent(request, true);
+        } catch (Exception e) {
+            log.error("Simulation error", e);
+        }
 
+        if (DEMO_DELAY_ACTIVE && !delayAlertPublished && demoDelayMinutes > 0) {
             try {
-                BusLocationEventRequest request = new BusLocationEventRequest(
-                        BUS_ID,
-                        ROUTE_ID,
-                        "TRIP-01",
-                        Instant.now().toString(),
-                        position.lat,
-                        position.lon,
-                        bearing,
-                        speedKmh,
-                        5.0,
-                        "IN_SERVICE",
-                        nextStopId
-                );
-                busEventService.ingestEvent(request);
-            } catch (Exception e) {
-                log.error("Simulation error", e);
+                alertService.publishLateBusAlert(BUS_ID, ROUTE_ID, "TRIP-01", resolveNextStopId(), demoDelayMinutes);
+                delayAlertPublished = true;
+            } catch (Exception ignored) {
+                // non-fatal
             }
+        }
+    }
 
-            if (DEMO_DELAY_ACTIVE && !delayAlertPublished && demoDelayMinutes > 0) {
-                try {
-                    alertService.publishLateBusAlert(BUS_ID, ROUTE_ID, "TRIP-01", nextStopId, demoDelayMinutes);
-                    delayAlertPublished = true;
-                } catch (Exception ignored) {
-                    // non-fatal
-                }
-            }
+    /**
+     * Kept for clarity: demo cruise is locked in startDemo; non-demo uses nominal.
+     */
+    private void recomputeCruiseSpeed() {
+        if (!DEMO_DELAY_ACTIVE) {
+            cruiseSpeedKmh = NOMINAL_SPEED_KMH;
+        }
+    }
+
+    private double computeInstantSpeed() {
+        if (b01Stops.isEmpty() || stopGeometryIndexes.length == 0) {
+            return cruiseSpeedKmh;
+        }
+        int idx = Math.max(0, Math.min(nextStopIndex, stopGeometryIndexes.length - 1));
+        double stopDist = cumulativeMeters[stopGeometryIndexes[idx]];
+        double distToStop = Math.abs(distanceAlongMeters - stopDist);
+        if (distToStop < APPROACH_SLOW_RADIUS_M) {
+            double factor = Math.max(0.15, distToStop / APPROACH_SLOW_RADIUS_M);
+            return cruiseSpeedKmh * factor;
+        }
+        // Mild natural variation while cruising
+        double wobble = 1.0 + 0.04 * Math.sin(distanceAlongMeters / 180.0);
+        return cruiseSpeedKmh * wobble;
+    }
+
+    private void maybeStartDwell() {
+        if (b01Stops.isEmpty()) {
+            return;
+        }
+        int idx = Math.max(0, Math.min(nextStopIndex, b01Stops.size() - 1));
+        // Dwell when we have just arrived at a stop we haven't dwelled at yet.
+        double stopDist = cumulativeMeters[stopGeometryIndexes[idx]];
+        if (Math.abs(distanceAlongMeters - stopDist) <= STOP_ARRIVAL_RADIUS_M
+                && lastDwelledStopIndex != idx) {
+            lastDwelledStopIndex = idx;
+            dwellRemainingSeconds = STOP_DWELL_SECONDS;
+            speedKmh = 0.0;
         }
     }
 

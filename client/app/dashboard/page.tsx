@@ -51,7 +51,12 @@ export default function StudentDashboard() {
     let cancelled = false
     async function loadAlerts() {
       const alerts = await api.getAlerts()
-      if (!cancelled) setPersistentAlerts(alerts.filter(a => a.status === "ACTIVE"))
+      // Defense in depth: never show engineering diagnostics to students
+      if (!cancelled) {
+        setPersistentAlerts(
+          alerts.filter(a => a.status === "ACTIVE" && a.type !== "DATA_QUALITY")
+        )
+      }
     }
     loadAlerts()
     const id = setInterval(loadAlerts, 4000)
@@ -76,23 +81,33 @@ export default function StudentDashboard() {
   }, [busData?.eta_minutes, alertFired])
 
   const notifiedDelayRef = useRef<number | null>(null)
+  const notifPermissionAsked = useRef(false)
   useEffect(() => {
     if (!busData) return
-    const delay = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0)
+    const delay = Math.round(busData.delay_minutes ?? 0)
     if (Math.abs(delay) < 1 || notifiedDelayRef.current === delay) return
     notifiedDelayRef.current = delay
+
+    // Request browser notification permission once when a meaningful delay appears
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default" &&
+      !notifPermissionAsked.current
+    ) {
+      notifPermissionAsked.current = true
+      Notification.requestPermission()
+    }
+
     const message = delay > 0
       ? `Bus B01 is running ${delay} minute${delay === 1 ? "" : "s"} late.`
       : `Bus B01 is approximately ${Math.abs(delay)} minute${Math.abs(delay) === 1 ? "" : "s"} early.`
     toast.warning(message, { duration: 7000 })
-  }, [busData?.delay_minutes, busData?.features?.predicted_delay_minutes])
 
-  // Request browser notification permission on mount
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission()
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+      new Notification("CampusRide Delay Update", { body: message, icon: "/favicon.ico" })
     }
-  }, [])
+  }, [busData?.delay_minutes])
 
   const handleLogout = () => {
     localStorage.clear()
@@ -100,19 +115,23 @@ export default function StudentDashboard() {
   }
 
   // Derive delay status from calculated delay (never hard-coded)
-  const getDelayStatus = () => {
-    if (!busData) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200", tone: "good" as const }
-    const d = Math.round(busData.features?.predicted_delay_minutes ?? busData.delay_minutes ?? 0)
+  const formatDelayLabel = (d: number) => {
     if (Math.abs(d) < 1) return { label: "ON TIME · 0 min", color: "text-emerald-700 bg-emerald-50 border-emerald-200", tone: "good" as const }
     if (d > 0) return { label: `DELAYED · +${d} min`, color: "text-red-700 bg-red-50 border-red-200", tone: "bad" as const }
     return { label: `EARLY · ${Math.abs(d)} min early`, color: "text-emerald-700 bg-emerald-50 border-emerald-200", tone: "good" as const }
   }
 
+  const getDelayStatus = () => {
+    if (!busData) return formatDelayLabel(0)
+    return formatDelayLabel(Math.round(busData.delay_minutes ?? 0))
+  }
+
   const delayStatus = getDelayStatus()
+  const nextStopDelayStatus = formatDelayLabel(Math.round(busData?.next_stop_delay_minutes ?? 0))
   const nextStop = busData?.next_stop ?? { name: "Loading route stop" }
   const currentStopName = busData?.current_stop?.name
   const dynamicEta = busData?.eta_minutes ?? 0
-  const predictedDelay = Math.round(busData?.features?.predicted_delay_minutes ?? busData?.delay_minutes ?? 0)
+  const predictedDelay = Math.round(busData?.delay_minutes ?? 0)
 
   const routeStops = (route as any)?.stops as Array<{ name: string; stopId?: string }> | undefined
   const routeSource = routeStops?.[0]?.name || "Source"
@@ -125,7 +144,7 @@ export default function StudentDashboard() {
       toast.success(result.message || "B01 simulation started")
       setSimulateReverse(!simulateReverse)
       const alerts = await api.getAlerts()
-      setPersistentAlerts(alerts.filter(a => a.status === "ACTIVE"))
+      setPersistentAlerts(alerts.filter(a => a.status === "ACTIVE" && a.type !== "DATA_QUALITY"))
     } catch (e: any) {
       toast.error(e?.message || "Simulation failed")
     } finally {
@@ -183,13 +202,17 @@ export default function StudentDashboard() {
 
               <div className="flex-1 p-4 flex flex-col justify-between gap-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="w-9 h-9 rounded-xl bg-terracotta text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
                       B01
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="text-sm font-bold text-espresso truncate">{route.name || "Route R01"}</h2>
-                      <p className="text-[11px] text-stone-text truncate">{routeSource} → {routeDestination}</p>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-sm font-bold text-espresso leading-snug break-words" title={route.name}>
+                        {route.name || "Route R01"}
+                      </h2>
+                      <p className="text-[11px] text-stone-text leading-snug break-words" title={`${routeSource} → ${routeDestination}`}>
+                        {routeSource} → {routeDestination}
+                      </p>
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${delayStatus.color}`}>
@@ -204,13 +227,18 @@ export default function StudentDashboard() {
                       <span className="text-4xl font-extrabold text-espresso font-serif">{dynamicEta || "--"}</span>
                       <span className="text-sm font-semibold text-stone-text">min away</span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-stone-text">
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-stone-text items-center">
                       {currentStopName && (
                         <span>Current: <strong className="text-espresso">{currentStopName}</strong></span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-terracotta" />
+                      <span className="flex items-center gap-1.5 flex-wrap">
+                        <MapPin className="w-3 h-3 text-terracotta shrink-0" />
                         Next: <strong className="text-espresso">{nextStop.name}</strong>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${nextStopDelayStatus.color}`}>
+                          {Math.abs(Math.round(busData?.next_stop_delay_minutes ?? 0)) < 1
+                            ? "ON TIME"
+                            : nextStopDelayStatus.label.replace(" · ", " ")}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -219,7 +247,7 @@ export default function StudentDashboard() {
                     <div className="bg-white/70 p-2 rounded-xl border border-stone-subtle">
                       <span className="text-[9px] uppercase font-bold tracking-wider text-stone-text">Speed</span>
                       <p className="text-sm font-bold text-espresso font-mono mt-0.5">
-                        {busData?.speed_kmh?.toFixed(1) ?? "--"} <span className="text-[10px] font-normal text-stone-text">km/h</span>
+                        {busData?.speed_kmh != null ? busData.speed_kmh.toFixed(1) : "--"} <span className="text-[10px] font-normal text-stone-text">km/h</span>
                       </p>
                     </div>
                     <div className="bg-white/70 p-2 rounded-xl border border-stone-subtle">
