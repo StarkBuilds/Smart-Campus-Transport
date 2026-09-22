@@ -57,6 +57,30 @@ public class User {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    // Added fields for Phase 2 Student & Driver Registration
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "campus")
+    private String campus;
+
+    // Student fields
+    @Column(name = "pickup_latitude")
+    private Double pickupLatitude;
+
+    @Column(name = "pickup_longitude")
+    private Double pickupLongitude;
+
+    // Driver fields
+    @Column(name = "driver_id_str")
+    private String driverId;
+
+    @Column(name = "assigned_bus_id")
+    private String assignedBusId;
+
+    @Column(name = "assigned_route_id")
+    private String assignedRouteId;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
@@ -64,6 +88,7 @@ public class User {
 
     public enum Role {
         STUDENT,
-        ADMIN
+        ADMIN,
+        DRIVER
     }
 }

@@ -13,11 +13,9 @@ import type { LiveBusData } from "@/types/bus"
 const LiveMap = dynamic(() => import("@/components/map/LiveMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full rounded-2xl bg-[#FAF8F5] flex items-center justify-center border border-[#DDD7CB]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-600 animate-spin" />
-        <p className="text-sm text-[#78716C]">Initializing campus map...</p>
-      </div>
+    <div className="absolute inset-0 bg-parchment flex flex-col items-center justify-center z-30">
+      <div className="w-10 h-10 rounded-full border-2 border-terracotta/20 border-t-terracotta animate-spin mb-3" />
+      <p className="text-xs text-stone-text">Loading...</p>
     </div>
   ),
 })
@@ -25,22 +23,19 @@ const LiveMap = dynamic(() => import("@/components/map/LiveMap"), {
 interface MapWrapperProps {
   busData: LiveBusData | null
   userRole: "student" | "driver"
-  activeRouteVariant?: "standard" | "traffic_alternate"
-  onToggleRouteVariant?: (variant: "standard" | "traffic_alternate") => void
+  onMapClick?: (longitude: number, latitude: number) => void
 }
 
 export default function MapWrapper({
   busData,
   userRole,
-  activeRouteVariant,
-  onToggleRouteVariant,
+  onMapClick,
 }: MapWrapperProps) {
   return (
     <LiveMap
       busData={busData}
       userRole={userRole}
-      activeRouteVariant={activeRouteVariant}
-      onToggleRouteVariant={onToggleRouteVariant}
+      onMapClick={onMapClick}
     />
   )
 }

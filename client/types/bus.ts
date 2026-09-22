@@ -4,7 +4,7 @@
 
 export type BusStatus = "IN_SERVICE" | "OUT_OF_SERVICE" | "DELAYED" | "APPROACHING" | "AT_STOP"
 
-export type UserRole = "student" | "driver"
+export type UserRole = "student" | "driver" | "admin"
 
 // Main GPS event — this is what the backend sends via WebSocket
 export interface BusEvent {
@@ -35,6 +35,18 @@ export interface LiveBusData extends BusEvent {
   features?: BusFeatures
   delay_minutes: number              // positive = late, negative = early
   eta_minutes: number                // minutes until arrival at student's stop
+  current_stop?: BusStopSummary
+  next_stop?: BusStopSummary
+  upcoming_stops?: BusStopSummary[]
+}
+
+export interface BusStopSummary {
+  stopId: string
+  name: string
+  latitude: number
+  longitude: number
+  sequenceOrder: number
+  arrivalOffsetMinutes: number | null
 }
 
 // A bus stop on campus

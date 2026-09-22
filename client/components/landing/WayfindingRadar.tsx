@@ -25,15 +25,13 @@ export default function WayfindingRadar({ onSwitchToCard }: WayfindingRadarProps
   const [zoomLevel, setZoomLevel] = useState(1)
   const pathRef = useRef<SVGPathElement>(null)
 
-  // Smooth Zomato/Swiggy vehicle interpolation & bearing rotation
+  // Smooth Zomato/Swiggy vehicle interpolation & bearing rotation (synchronized with Dashboard & Driver)
   useEffect(() => {
     let animId: number
-    let startTime = performance.now()
-    const cycleDuration = 16000 // 16-second loop
+    const cycleDuration = 72000 // 72-second graceful synchronized loop
 
-    const updateLoop = (now: number) => {
-      const elapsed = now - startTime
-      const t = (elapsed % cycleDuration) / cycleDuration
+    const updateLoop = () => {
+      const t = (Date.now() % cycleDuration) / cycleDuration
       setProgress(t)
 
       if (pathRef.current) {

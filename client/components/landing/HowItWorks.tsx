@@ -52,7 +52,7 @@ export default function HowItWorks() {
         <div className="text-center max-w-2xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#DDD7CB] text-xs font-mono font-bold text-[#1E40AF] shadow-2xs mb-3">
             <span className="w-2 h-2 rounded-full bg-[#1D4ED8] animate-pulse" />
-            OPERATIONAL PIPELINE
+            HOW IT WORKS
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1C1917] tracking-tight">
             How CampusRide works in{" "}

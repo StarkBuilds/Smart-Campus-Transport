@@ -19,7 +19,7 @@ import MapWrapper from "@/components/map/MapWrapper"
 import TiltCard from "@/components/common/TiltCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
 import { BUS_STOPS } from "@/lib/constants"
-import { toIST } from "@/lib/mock-data"
+import { toIST } from "@/lib/formatting"
 
 // Simulated pickup list — in production this comes from the backend
 const PICKUP_LIST = [
@@ -68,50 +68,10 @@ export default function DriverDashboard() {
     : "--"
 
   return (
-    <div className="h-screen flex flex-col bg-[#F6F4EE] text-[#1C1917] overflow-hidden">
-      {/* Top bar */}
-      <header className="flex-shrink-0 h-14 flex items-center justify-between px-5 border-b border-[#DDD7CB] bg-[#FAF8F5]/95 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#B45309] to-[#D97706] flex items-center justify-center shadow-xs">
-            <Bus className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <span className="text-sm font-bold text-[#1C1917]">CampusRide</span>
-            <span className="text-xs text-[#78716C] ml-2 font-medium">Driver Console</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#DDD7CB]">
-            {isConnected
-              ? <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-              : <WifiOff className="w-3.5 h-3.5 text-red-500" />
-            }
-            <span className="text-xs text-[#57534E] font-medium hidden sm:block">
-              {isConnected ? "Connected" : "Offline"}
-            </span>
-          </div>
-          <span className="text-xs font-semibold text-[#1C1917] hidden md:inline">Hi, {driverName}</span>
-          <Link
-            href="/analytics"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#1C1917] bg-white hover:bg-[#F6F4EE] border border-[#DDD7CB] transition-all shadow-xs"
-          >
-            <Layers className="w-3.5 h-3.5 text-[#B45309]" />
-            <span className="hidden sm:block">Analytics Hub</span>
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-[#78716C] hover:text-[#1C1917] border border-[#DDD7CB] hover:bg-[#F6F4EE] transition-all shadow-xs"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:block">End Trip</span>
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-[#F6F4EE] text-[#1C1917] overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left panel */}
-        <aside className="w-72 flex-shrink-0 flex flex-col gap-3 p-4 border-r border-[#DDD7CB] bg-[#FAF8F5] overflow-y-auto custom-scrollbar">
+        <aside className="w-full md:w-72 flex-shrink-0 flex flex-col gap-3 p-4 border-b md:border-b-0 md:border-r border-[#DDD7CB] bg-[#FAF8F5] max-h-[36vh] md:max-h-none overflow-y-auto custom-scrollbar">
 
           {/* Trip summary */}
           <TiltCard intensity={6} className="bg-white rounded-xl border border-[#DDD7CB] p-4 shadow-xs">
@@ -249,8 +209,6 @@ export default function DriverDashboard() {
             <MapWrapper
               busData={busData}
               userRole="driver"
-              activeRouteVariant={driverRouteVariant}
-              onToggleRouteVariant={setDriverRouteVariant}
             />
           </div>
         </main>
