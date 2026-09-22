@@ -19,7 +19,7 @@ import MapWrapper from "@/components/map/MapWrapper"
 import TiltCard from "@/components/common/TiltCard"
 import { useBusSocket } from "@/hooks/use-bus-socket"
 import { BUS_STOPS } from "@/lib/constants"
-import { toIST } from "@/lib/mock-data"
+import { toIST } from "@/lib/formatting"
 
 // Simulated pickup list — in production this comes from the backend
 const PICKUP_LIST = [

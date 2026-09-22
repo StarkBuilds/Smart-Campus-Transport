@@ -9,13 +9,25 @@
 // 5. Front: STCET Verified Student Transit Pass for Sohom Giri with live telemetry & ETA
 // 6. Back: Digital security barcode, QR pass scanner, driver contact & gate verification
 
-import React, { useRef, useCallback, useState } from "react"
-import { Bus, QrCode, ShieldCheck, Wifi, MapPin, Clock, Zap } from "lucide-react"
+import React, { useRef, useCallback, useState, useEffect } from "react"
+import { Bus, QrCode, ShieldCheck, Wifi, MapPin, Clock, Zap, AlertTriangle, TrendingDown, Activity } from "lucide-react"
 
-export default function TransitSmartCard() {
+export default function TransitSmartCard({
+  userName = "STUDENT",
+  dynamicEta = 8,
+  speed = 0,
+  predictedDelay = 0,
+}: {
+  userName?: string,
+  dynamicEta?: number,
+  speed?: number,
+  predictedDelay?: number
+}) {
   const tiltRef = useRef<HTMLDivElement>(null)
   const glareRef = useRef<HTMLDivElement>(null)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [prevEta, setPrevEta] = useState(dynamicEta)
+  const [etaStatus, setEtaStatus] = useState<"stable" | "delayed" | "early">("stable")
 
   // 3D Tilt calculation
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

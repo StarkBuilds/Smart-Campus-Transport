@@ -11,20 +11,93 @@ import { Bus, Eye, EyeOff, GraduationCap, Truck, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { BUS_STOPS } from "@/lib/constants"
 
-type Role = "student" | "driver"
+const CAMPUSES = [
+  "St. Thomas' College of Engineering and Technology",
+  "Alipore Campus",
+  "Main Campus"
+]
+
+const ROUTES = [
+  { id: "R01", name: "R01 Express" },
+  { id: "R02", name: "R02 Local" }
+]
+
+const BUSES = [
+  { id: "B01", name: "Bus B01 (WB-11-2023)" },
+  { id: "B02", name: "Bus B02 (WB-12-2024)" }
+]
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [role, setRole] = useState<Role>("student")
+  
+  const [role, setRole] = useState<"STUDENT" | "DRIVER">("STUDENT")
+  
+  // Shared fields
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [stopId, setStopId] = useState("")
-  const [showPass, setShowPass] = useState(false)
+  const [campus, setCampus] = useState(CAMPUSES[0])
+  
+  // Student fields
+  const [pickupLatitude, setPickupLatitude] = useState<number | "">("")
+  const [pickupLongitude, setPickupLongitude] = useState<number | "">("")
+  const [gettingLocation, setGettingLocation] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  
+  // Driver fields
+  const [driverId, setDriverId] = useState("")
+  const [assignedRouteId, setAssignedRouteId] = useState(ROUTES[0].id)
+  const [assignedBusId, setAssignedBusId] = useState(BUSES[0].id)
+  
+  // State
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Success states
+  const [success, setSuccess] = useState(false)
+  const [assignedRouteName, setAssignedRouteName] = useState("")
+  const [assignedStopName, setAssignedStopName] = useState("")
+  
+  const handleGetLocation = () => {
+    setGettingLocation(true)
+    setLocationError(null)
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setPickupLatitude(position.coords.latitude)
+          setPickupLongitude(position.coords.longitude)
+          setGettingLocation(false)
+        },
+        (err) => {
+          console.error(err)
+          setLocationError("Unable to retrieve location. Please allow access or try again.")
+          setGettingLocation(false)
+        }
+      )
+    } else {
+      setLocationError("Geolocation is not supported by your browser.")
+      setGettingLocation(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    
+    // Manual validation
+    if (role === "STUDENT") {
+      if (pickupLatitude === "" || pickupLongitude === "") {
+        setError("Please provide your home/pickup location for automatic route assignment.")
+        return
+      }
+    } else {
+      if (!driverId) {
+        setError("Driver ID is required.")
+        return
+      }
+    }
+    
     setLoading(true)
 
     // Simulate registration API call
@@ -67,6 +140,9 @@ export default function RegisterPage() {
               <span className="text-[10px] text-[#B45309] tracking-widest uppercase font-bold font-mono mt-0.5">STCET Live Fleet</span>
             </div>
           </Link>
+          <span className="text-xs uppercase tracking-widest font-semibold text-stone-text block">
+            Account Registration
+          </span>
         </div>
 
         {/* Elevated Royal Card */}
@@ -92,6 +168,7 @@ export default function RegisterPage() {
               </button>
             ))}
           </div>
+        )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
